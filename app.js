@@ -841,7 +841,7 @@ function inferType(label) {
 
 function inferEditable(label) {
   const normalized = normalizeHeader(label);
-  return normalized === "catman" || normalized.includes("status") || EDITABLE_TEXT_COLUMNS.includes(normalized);
+  return normalized.includes("status") || EDITABLE_TEXT_COLUMNS.includes(normalized);
 }
 
 function inferAmber(label) {
