@@ -1165,7 +1165,48 @@ tbody tr:hover td:nth-child(1) {
 
 .column-row th:nth-child(1),
 tbody td:nth-child(1) {
+  width: 118px;
+  max-width: 118px;
+  overflow: hidden;
+  background-clip: padding-box;
   box-shadow: 1px 0 0 var(--rappi-border);
+  text-overflow: ellipsis;
+}
+
+.column-row th:nth-child(2),
+tbody td:nth-child(2) {
+  position: sticky;
+  left: 118px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  overflow: hidden;
+  background-clip: padding-box;
+  box-shadow: 1px 0 0 var(--rappi-border);
+  text-overflow: ellipsis;
+}
+
+.column-row th:nth-child(2) {
+  z-index: 6;
+}
+
+tbody td:nth-child(1) {
+  z-index: 8;
+  background: var(--rappi-surface) !important;
+}
+
+tbody td:nth-child(2) {
+  z-index: 7;
+  background: var(--rappi-surface) !important;
+  font-weight: 700;
+}
+
+tbody tr:hover td:nth-child(1) {
+  background: #fff4f0 !important;
+}
+
+tbody tr:hover td:nth-child(2) {
+  background: #fff4f0 !important;
 }
 
 .cell-amber {
@@ -1294,6 +1335,14 @@ tbody td:nth-child(1) {
   font-weight: 700;
 }
 
+.hero-title .hero-contact {
+  max-width: 520px;
+  margin-top: 3px;
+  color: var(--rappi-soft-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .hero-side {
   display: grid;
   align-items: center;
@@ -1406,7 +1455,8 @@ tbody td:nth-child(1) {
   }
 
   .hero-title .hero-subtitle,
-  .hero-title .hero-connection {
+  .hero-title .hero-connection,
+  .hero-title .hero-contact {
     max-width: 300px;
     line-height: 1.3;
   }
@@ -1473,6 +1523,7 @@ tbody td:nth-child(1) {
 
   .hero-title .hero-subtitle,
   .hero-title .hero-connection,
+  .hero-title .hero-contact,
   #connectionStatus {
     min-width: 0;
     max-width: none;
