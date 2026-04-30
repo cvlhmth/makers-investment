@@ -17,6 +17,21 @@ const MAKER_SHEET_NAME = "Maker";
 const ND_SHEET_GID = 1349527717;
 const ND_SHEET_FALLBACK_NAME = "ND";
 const FIRST_ND_NUMBER = 358;
+const SCRIPT_VERSION = "2026-04-30-pdf-status-v2";
+
+const ALLOWED_EDIT_COLUMNS = [
+  "STATUS CATMAN",
+  "STATUS FP&A",
+  "DATA_ENVIO",
+  "PREVISAO_PGTO",
+  "OBS",
+  "VALOR FINAL",
+  "EMISSÃO",
+  "ENVIO",
+  "PREVISÃO PGT",
+  "LINK",
+  "COMPROVANTE LINK"
+];
 
 // Pasta raiz nova informada por voce.
 const ROOT_FOLDER_ID = "16xcdOEGPgRFU2Tevzlkr1c-mAXZZ8X1C";
@@ -39,17 +54,19 @@ const ND_HEADERS = [
   "CRIADO_EM",
   "LINK",
   "PDF_STATUS",
-  "PDF_ERRO"
+  "PDF_ERRO",
+  "SCRIPT_VERSION"
 ];
 
-function doGet() {
+function doGetNd() {
   return json_({
     ok: true,
-    app: "Makers Investment ND Web App"
+    app: "Makers Investment ND Web App",
+    version: SCRIPT_VERSION
   });
 }
 
-function doPost(e) {
+function doPostNd(e) {
   try {
     const payload = JSON.parse((e.postData && e.postData.contents) || "{}");
     assertSecret_(payload.secret);
@@ -66,6 +83,15 @@ function doPost(e) {
     });
   }
 }
+
+/**
+ * Se voce quiser manter seu doPost antigo, deixe nele este roteamento:
+ *
+ * const payload = JSON.parse(e.postData.contents || "{}");
+ * if (payload.action === "create_nds") return doPostNd(e);
+ *
+ * O restante do doPost antigo pode continuar editando celulas do Maker.
+ */
 
 function createNds_(rows) {
   const ss = SpreadsheetApp.openById(MAKER_SPREADSHEET_ID);
@@ -95,18 +121,21 @@ function createNds_(rows) {
     nextNd += 1;
 
     let link = "";
+    let rowStatus = "ERRO PDF";
     let pdfStatus = "NAO GERADO";
     let pdfError = "";
     try {
       link = createPdfForNd_(input, nNd);
+      rowStatus = link ? "GERADO" : "SEM LINK";
       pdfStatus = link ? "GERADO" : "SEM LINK";
     } catch (error) {
       pdfError = String(error && error.message ? error.message : error);
+      pdfStatus = "ERRO";
       console.error("PDF nao gerado para ND " + nNd + ": " + pdfError);
     }
 
     rowsToAppend.push(rowObjectToSheetRow_({
-      STATUS: "GERADO",
+      STATUS: rowStatus,
       N_ND: nNd,
       MAKER: input.maker || "",
       ANO: input.ano || "",
@@ -120,7 +149,8 @@ function createNds_(rows) {
       CRIADO_EM: now,
       LINK: link,
       PDF_STATUS: pdfStatus,
-      PDF_ERRO: pdfError
+      PDF_ERRO: pdfError,
+      SCRIPT_VERSION: SCRIPT_VERSION
     }, headerMap));
 
     allKeys.forEach((key) => existingKeys.add(key));
@@ -145,6 +175,9 @@ function updateMakerCell_(payload) {
 
   if (!idAlianca) throw new Error("idAlianca nao informado.");
   if (!columnLabel) throw new Error("Coluna nao informada.");
+  if (!ALLOWED_EDIT_COLUMNS.map(normalizeHeader_).includes(normalizeHeader_(columnLabel))) {
+    throw new Error("Coluna nao permitida: " + columnLabel);
+  }
 
   const ss = SpreadsheetApp.openById(MAKER_SPREADSHEET_ID);
   const sheet = ss.getSheetByName(MAKER_SHEET_NAME);
