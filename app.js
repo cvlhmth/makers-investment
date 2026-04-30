@@ -807,6 +807,7 @@ function getColumnDisplayLabel(label) {
   const normalized = normalizeHeader(label);
   if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o";
   if (normalized === "execucao") return "Pagamento";
+  if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
   return label;
 }
 
@@ -1194,7 +1195,7 @@ function setWriteStatus(message, status) {
 
 function renderMetrics() {
   const queryKey = findColumnKey(["valor query", "vlr query"]);
-  const executionKey = findColumnKey(["execucao", "execução"]);
+  const executionKey = findColumnKey(["valor_pagamento", "valor pagamento", "valor pgto"]) || findColumnKey(["execucao", "execução"]);
   const diffKey = findColumnKey(["diff", "dif"]);
 
   const totalQuery = sumByKey(state.filteredRows, queryKey);
