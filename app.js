@@ -176,6 +176,12 @@ const STATUS_OPTIONS = [
   "In Progress"
 ];
 
+const STATUS_CATMAN_OPTIONS = [
+  "",
+  "Valido",
+  "Aguardando Valida\u00e7\u00e3o"
+];
+
 const EDITABLE_TEXT_COLUMNS = [
   "valor final",
   "obs",
@@ -929,7 +935,7 @@ function getStatusOptions(column, currentValue = "") {
   let lookupOptions = [];
 
   if (normalized === "status catman") {
-    lookupOptions = state.lookupOptions.statusCatman;
+    return STATUS_CATMAN_OPTIONS;
   } else if (normalized.includes("status fp&a") || normalized.includes("status fpna")) {
     lookupOptions = state.lookupOptions.statusFpa;
   }
@@ -1077,11 +1083,12 @@ function renderEditableCell(row, column) {
   if (normalized.includes("status")) {
     const select = document.createElement("select");
     select.className = "status-select";
-    getStatusOptions(column, value).forEach((optionValue) => select.append(new Option(toDisplayCase(optionValue) || "-", optionValue)));
-    if (![...select.options].some((option) => option.value === value)) {
+    const selectValue = normalized === "status catman" ? normalizeCatmanStatusValue(value) : value;
+    getStatusOptions(column, selectValue).forEach((optionValue) => select.append(new Option(toDisplayCase(optionValue) || "-", optionValue)));
+    if (normalized !== "status catman" && ![...select.options].some((option) => option.value === selectValue)) {
       select.append(new Option(toDisplayCase(value), value));
     }
-    select.value = value;
+    select.value = selectValue;
     select.addEventListener("change", () => updateLocalEdit(row, column, select.value));
     return select;
   }
@@ -1551,6 +1558,21 @@ function isCatmanOption(value) {
   if (!isSelectableOption(text)) return false;
 
   return normalizeHeader(text) !== "catman";
+}
+
+function normalizeCatmanStatusValue(value) {
+  const normalized = normalizeHeader(value);
+  if (!normalized) return "";
+
+  if (["approved", "aprovado", "valido", "validado"].includes(normalized)) {
+    return "Valido";
+  }
+
+  if (normalized.includes("aguardando") || ["pending", "pendente", "validar"].includes(normalized)) {
+    return "Aguardando Valida\u00e7\u00e3o";
+  }
+
+  return "";
 }
 
 function normalizeHeader(value) {

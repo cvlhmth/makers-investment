@@ -88,10 +88,28 @@ Quando alterar um campo editavel, o site salva localmente e envia para o Apps Sc
 
 Como o Apps Script nao devolve CORS de forma confiavel para site estatico, o painel mostra `Enviado ao Sheets, atualize para confirmar`; depois clique em atualizar para recarregar o CSV publicado.
 
+## Criacao de NDs
+
+A pagina `nd.html` monta uma fila de NDs usando a aba `Maker` e o historico publicado no `gid=1349527717`.
+
+Regras principais:
+
+- entra na fila quando `Status Catman` estiver como `Valido`; valores antigos `Approved`/`Aprovado` tambem sao aceitos para transicao.
+- a primeira ND nova e `358`, ou o proximo numero depois do maior `N_ND` ja existente no historico.
+- a pagina compara `ID_ALIANCA`, maker, ano e valor para evitar criar copia quando o botao for clicado de novo.
+- a criacao real no Sheets/Drive precisa do Apps Script do arquivo `APPS_SCRIPT_ND_WEBAPP.gs`.
+
+Para ativar a criacao:
+
+1. Cole o conteudo de `APPS_SCRIPT_ND_WEBAPP.gs` em um projeto Apps Script.
+2. Em `Project Settings > Script properties`, crie a propriedade `SECRET`.
+3. Publique como Web App.
+4. Abra `nd.html`, preencha `Apps Script URL` e `Token de escrita`, salve e clique em `Criar NDs`.
+
 ## Filtros extras
 
 O painel reconhece a coluna `ANO` automaticamente e cria o filtro `Ano`.
 
-O filtro e o seletor da coluna `CATMAN` usam as opcoes encontradas na aba `filters`, coluna `CATMAN`/K. O link publicado dessa aba esta configurado com `gid=1292236262`. Se a aba `filters` nao carregar, o painel usa os valores de `CATMAN` que ja existem na aba principal.
+O filtro da coluna `CATMAN` usa as opcoes encontradas na aba `filters`, coluna `CATMAN`/K. O link publicado dessa aba esta configurado com `gid=1292236262`. Se a aba `filters` nao carregar, o painel usa os valores de `CATMAN` que ja existem na aba principal.
 
-As opcoes de `Status Catman` vem da aba `filters`, coluna B. As opcoes de `Status FP&A` vem da aba `filters`, coluna C. Se essas listas nao carregarem, o painel usa os status ja presentes na base e uma lista padrao.
+As opcoes de `Status Catman` agora sao fixas: `Valido` e `Aguardando Validacao`. As opcoes de `Status FP&A` vem da aba `filters`, coluna C. Se essa lista nao carregar, o painel usa os status ja presentes na base e uma lista padrao.

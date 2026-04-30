@@ -1534,3 +1534,138 @@ tbody tr:hover td:nth-child(2) {
     justify-content: flex-end;
   }
 }
+
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+a.icon-button,
+a.ghost-button,
+a.primary-button {
+  color: inherit;
+  text-decoration: none;
+}
+
+.report-hero .nav-link-button {
+  min-height: 36px;
+  border-color: var(--rappi-border);
+  background: var(--rappi-surface);
+  color: var(--rappi-muted);
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.report-hero .nav-link-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.report-hero .nav-link-button:hover {
+  transform: none;
+  border-color: var(--rappi-border-hover);
+  background: var(--rappi-surface-2);
+  color: var(--rappi-text);
+  box-shadow: none;
+}
+
+button:disabled,
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.nd-page .nd-config-panel {
+  display: block;
+}
+
+.nd-workbench .toolbar {
+  gap: 10px;
+}
+
+#ndTable {
+  min-width: 1180px;
+}
+
+#ndTable th:nth-child(1),
+#ndTable td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+  background: var(--rappi-surface) !important;
+  box-shadow: 1px 0 0 var(--rappi-border);
+}
+
+#ndTable th:nth-child(2),
+#ndTable td:nth-child(2) {
+  position: sticky;
+  left: 118px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  overflow: hidden;
+  background: var(--rappi-surface) !important;
+  box-shadow: 1px 0 0 var(--rappi-border);
+  text-overflow: ellipsis;
+}
+
+#ndTable th:nth-child(1),
+#ndTable th:nth-child(2) {
+  z-index: 7;
+  background: var(--rappi-surface-2) !important;
+}
+
+#ndTable td:nth-child(1),
+#ndTable td:nth-child(2) {
+  z-index: 6;
+}
+
+#ndTable .nd-row:hover td:nth-child(1),
+#ndTable .nd-row:hover td:nth-child(2) {
+  background: #fff4f0 !important;
+}
+
+.nd-row-created td {
+  color: var(--rappi-soft-text);
+}
+
+.nd-status-badge {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.nd-status-badge.is-ready {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.nd-status-badge.is-created {
+  background: rgba(107, 107, 122, 0.12);
+  color: var(--rappi-muted);
+}
+
+.nd-status-badge.is-blocked {
+  background: rgba(245, 158, 11, 0.14);
+  color: #a16207;
+}
+
+.nd-status-reason {
+  display: block;
+  max-width: 340px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--rappi-soft-text);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+}

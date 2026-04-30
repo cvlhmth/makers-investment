@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Makers Investment | Criacao de NDs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell nd-page">
+      <header class="report-hero">
+        <div class="hero-copy">
+          <a class="rappi-logo" href="./index.html" aria-label="Rappi">
+            <img src="./rappi-logo.png" alt="Rappi" />
+          </a>
+
+          <span class="hero-divider" aria-hidden="true"></span>
+
+          <div class="hero-title">
+            <h1>Makers Investment</h1>
+            <p class="hero-subtitle">Criacao de NDs - makers aprovados pelo Catman</p>
+            <p class="hero-connection" id="ndConnectionStatus">Carregando base Maker</p>
+            <p class="hero-contact">Slack: @matheus.carvalho @rita.kamensky</p>
+          </div>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-status">
+            <span class="confidential-badge">CONFIDENCIAL - FP&amp;A</span>
+          </div>
+
+          <div class="topbar-actions">
+            <a class="ghost-button nav-link-button" href="./index.html" title="Voltar ao dashboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10.8 5.4 12.2 6.8 8 11h11v2H8l4.2 4.2-1.4 1.4L4.2 12l6.6-6.6Z" />
+              </svg>
+              Dashboard
+            </a>
+            <button class="icon-button" id="ndRefreshButton" type="button" title="Atualizar dados" aria-label="Atualizar dados">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z" />
+              </svg>
+            </button>
+            <button class="icon-button" id="ndExportButton" type="button" title="Exportar CSV" aria-label="Exportar CSV">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v10.2l3.6-3.6L17 11l-6 6-6-6 1.4-1.4 3.6 3.6V3h2ZM5 19h14v2H5v-2Z" />
+              </svg>
+            </button>
+            <button class="primary-button" id="ndCreateButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 3h6l4 4v14H5V3h4Zm5 1.7V8h3.3L14 4.7ZM8 12v2h8v-2H8Zm0 4v2h8v-2H8Z" />
+              </svg>
+              Criar NDs
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="report-content">
+        <section class="quick-tabs" aria-label="Status das NDs">
+          <button class="quick-tab is-active" type="button" data-nd-filter="">All</button>
+          <button class="quick-tab" type="button" data-nd-filter="ready">Prontas</button>
+          <button class="quick-tab" type="button" data-nd-filter="created">Ja criadas</button>
+          <button class="quick-tab" type="button" data-nd-filter="blocked">Pendentes</button>
+        </section>
+
+        <section class="config-panel nd-config-panel is-open" aria-label="Configuracao de escrita">
+          <div class="config-grid">
+            <label>
+              <span>Apps Script URL</span>
+              <input id="ndWriteEndpointInput" type="url" autocomplete="off" placeholder="https://script.google.com/.../exec" />
+            </label>
+            <label>
+              <span>Token de escrita</span>
+              <input id="ndWriteSecretInput" type="password" autocomplete="off" placeholder="Mesmo SECRET do Apps Script" />
+            </label>
+            <div class="config-actions">
+              <button class="primary-button" id="ndSaveConfigButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 3h12l2 2v16H5V3Zm2 2v14h10V7.8L14.2 5H7Zm2 0h4v5H9V5Zm0 9h6v2H9v-2Z" />
+                </svg>
+                Salvar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-heading">
+          <div>
+            <h2>Fila de NDs</h2>
+            <p>Linhas com Status Catman valido entram na fila. O historico evita recriar a mesma ND.</p>
+          </div>
+          <span class="period-badge">Numero inicial 358</span>
+        </section>
+
+        <section class="metrics-grid" aria-label="Resumo de NDs">
+          <article class="metric">
+            <span>Prontas</span>
+            <strong id="ndMetricReady">0</strong>
+          </article>
+          <article class="metric">
+            <span>Ja criadas</span>
+            <strong id="ndMetricCreated">0</strong>
+          </article>
+          <article class="metric">
+            <span>Pendentes</span>
+            <strong id="ndMetricBlocked">0</strong>
+          </article>
+          <article class="metric">
+            <span>Proxima ND</span>
+            <strong id="ndMetricNext">358</strong>
+          </article>
+        </section>
+
+        <section class="workbench nd-workbench">
+          <div class="toolbar">
+            <label class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.8 4a5.8 5.8 0 0 1 4.64 9.28l4.14 4.14-1.42 1.42-4.14-4.14A5.8 5.8 0 1 1 9.8 4Zm0 2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z" />
+              </svg>
+              <input id="ndSearchInput" type="search" placeholder="Buscar maker, CNPJ, status..." />
+            </label>
+
+            <label>
+              <span>Ano</span>
+              <select id="ndYearFilter"></select>
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select id="ndStatusFilter"></select>
+            </label>
+
+            <button class="ghost-button" id="ndClearFiltersButton" type="button">Limpar</button>
+          </div>
+
+          <div class="table-wrap nd-table-wrap">
+            <table id="ndTable">
+              <thead>
+                <tr>
+                  <th>ND</th>
+                  <th>Maker</th>
+                  <th>Ano</th>
+                  <th>Mes</th>
+                  <th>Valor validado</th>
+                  <th>Valor final extenso</th>
+                  <th>Status Catman</th>
+                  <th>Situacao</th>
+                </tr>
+              </thead>
+              <tbody id="ndTableBody"></tbody>
+            </table>
+            <div class="empty-state" id="ndEmptyState" hidden>
+              <strong>Nenhuma ND na fila</strong>
+              <span>Revise os filtros ou atualize a base Maker.</span>
+            </div>
+          </div>
+
+          <footer class="table-footer">
+            <span id="ndRowCount">0 linhas</span>
+            <span id="ndWriteStatus">Escrita nao configurada</span>
+            <span id="ndHistoryStatus">Historico nao carregado</span>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script src="./nd.js"></script>
+  </body>
+</html>
