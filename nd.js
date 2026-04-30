@@ -2,6 +2,7 @@ const ND_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=0&single=true&output=csv",
   ndHistorySource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1349527717&single=true&output=csv",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
+  legacyWriteEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
   firstNd: 358
 };
 
@@ -60,8 +61,10 @@ const ndEls = {
 document.addEventListener("DOMContentLoaded", initNdPage);
 
 function initNdPage() {
-  ndState.writeEndpoint = localStorage.getItem(ND_STORAGE_KEYS.writeEndpoint) || ND_CONFIG.writeEndpoint;
+  const savedEndpoint = localStorage.getItem(ND_STORAGE_KEYS.writeEndpoint) || "";
+  ndState.writeEndpoint = !savedEndpoint || savedEndpoint === ND_CONFIG.legacyWriteEndpoint ? ND_CONFIG.writeEndpoint : savedEndpoint;
   ndState.writeSecret = localStorage.getItem(ND_STORAGE_KEYS.writeSecret) || "";
+  localStorage.setItem(ND_STORAGE_KEYS.writeEndpoint, ndState.writeEndpoint);
 
   ndEls.writeEndpointInput.value = ndState.writeEndpoint;
   ndEls.writeSecretInput.value = ndState.writeSecret;
