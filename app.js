@@ -178,7 +178,7 @@ const STATUS_OPTIONS = [
 
 const STATUS_CATMAN_OPTIONS = [
   "",
-  "Valido",
+  "Validado",
   "Aguardando Valida\u00e7\u00e3o"
 ];
 
@@ -792,6 +792,7 @@ function buildColumns(sourceColumns) {
       key: uniqueKey(slugify(label) || `coluna_${index + 1}`, index),
       original: label,
       label,
+      displayLabel: getColumnDisplayLabel(label),
       group: inferGroup(label, index),
       type: inferType(label),
       editable: inferEditable(label),
@@ -800,6 +801,13 @@ function buildColumns(sourceColumns) {
   });
 
   return cleaned;
+}
+
+function getColumnDisplayLabel(label) {
+  const normalized = normalizeHeader(label);
+  if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o";
+  if (normalized === "execucao") return "Pagamento";
+  return label;
 }
 
 function uniqueKey(base, index) {
@@ -980,7 +988,7 @@ function renderHead() {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = column.label;
+    button.textContent = column.displayLabel || column.label;
     button.addEventListener("click", () => sortBy(column.key));
 
     th.append(button);
@@ -1238,7 +1246,7 @@ function compareValues(a, b, key) {
 }
 
 function exportFilteredCsv() {
-  const rows = [state.columns.map((column) => column.label)];
+  const rows = [state.columns.map((column) => column.displayLabel || column.label)];
 
   state.filteredRows.forEach((row) => {
     rows.push(state.columns.map((column) => row[column.key] ?? ""));
@@ -1565,7 +1573,7 @@ function normalizeCatmanStatusValue(value) {
   if (!normalized) return "";
 
   if (["approved", "aprovado", "valido", "validado"].includes(normalized)) {
-    return "Valido";
+    return "Validado";
   }
 
   if (normalized.includes("aguardando") || ["pending", "pendente", "validar"].includes(normalized)) {

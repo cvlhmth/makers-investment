@@ -1,54 +1,69 @@
 /**
- * Web App para o Makers Investment.
+ * nd.gs
  *
- * O site estatico envia:
- * - edicoes normais do dashboard: { secret, idAlianca, column, value }
- * - criacao de NDs: { action: "create_nds", secret, rows: [...] }
- *
- * Antes de publicar:
- * 1. Cole este arquivo no Apps Script ligado a sua conta Google.
- * 2. Em Project Settings > Script properties, crie SECRET com o mesmo token usado no site.
- * 3. Deploy > Web app > Execute as: Me > Who has access: Anyone/Anyone within Rappi.
+ * Este arquivo NAO deve ter doGet() nem doPost().
+ * O Untitled.gs recebe a chamada do site e chama ndWebDoPost() daqui.
  */
 
-const WRITE_SECRET = "";
-const MAKER_SPREADSHEET_ID = "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44";
-const MAKER_SHEET_NAME = "Maker";
-const ND_SHEET_GID = 1349527717;
-const ND_SHEET_FALLBACK_NAME = "ND";
-const FIRST_ND_NUMBER = 358;
-const SCRIPT_VERSION = "2026-04-30-pdf-status-v2";
+const ND_WEB_WRITE_SECRET = "";
+const ND_WEB_MAKER_SPREADSHEET_ID = "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44";
+const ND_WEB_ND_SHEET_GID = 1349527717;
+const ND_WEB_ND_SHEET_FALLBACK_NAME = "ND";
+const ND_WEB_FIRST_ND_NUMBER = 358;
+const ND_WEB_SCRIPT_VERSION = "2026-04-30-specific-nd-key-v5";
+const ND_WEB_ROOT_FOLDER_ID = "16xcdOEGPgRFU2Tevzlkr1c-mAXZZ8X1C";
+const ND_WEB_TEMPLATE_DOC_ID = "1wH0cqY46CwKVc3AcmWJCGtXcXypcgt9tACqcf2Nh3WQ";
+const ND_WEB_CATMAN_SHEET_NAME = "Catman";
+const ND_WEB_CATMAN_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1975482772&single=true&output=csv";
 
-const ALLOWED_EDIT_COLUMNS = [
-  "STATUS CATMAN",
-  "STATUS FP&A",
-  "DATA_ENVIO",
-  "PREVISAO_PGTO",
-  "OBS",
-  "VALOR FINAL",
-  "EMISSÃO",
-  "ENVIO",
-  "PREVISÃO PGT",
-  "LINK",
-  "COMPROVANTE LINK"
+const ND_WEB_MESES_EXTENSO = [
+  "janeiro",
+  "fevereiro",
+  "mar\u00e7o",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro"
 ];
 
-// Pasta raiz nova informada por voce.
-const ROOT_FOLDER_ID = "16xcdOEGPgRFU2Tevzlkr1c-mAXZZ8X1C";
+const ND_WEB_MESES_NOMEADOS = [
+  "01 - Janeiro",
+  "02 - Fevereiro",
+  "03 - Mar\u00e7o",
+  "04 - Abril",
+  "05 - Maio",
+  "06 - Junho",
+  "07 - Julho",
+  "08 - Agosto",
+  "09 - Setembro",
+  "10 - Outubro",
+  "11 - Novembro",
+  "12 - Dezembro"
+];
 
-// Template do seu script atual. Troque se criar outro modelo.
-const TEMPLATE_DOC_ID = "1cf3NvNgY4JT7mfTNd_G1VowKQo-ZhOds815zGdEidRA";
-
-const ND_HEADERS = [
+const ND_WEB_HEADERS = [
   "STATUS",
   "N_ND",
   "MAKER",
+  "VALOR",
+  "VALOR POR EXTENSO",
+  "REFER\u00caNCIA",
+  "CNPJ",
+  "CNPJ_2",
+  "RAZ\u00c3O SOCIAL",
+  "ENDERE\u00c7O",
+  "DATA DE VENCIMENTO",
+  "SAP",
   "ANO",
   "MES",
   "VALOR EMISSAO ND",
   "VALOR FINAL EXTENSO",
   "ID_ALIANCA",
-  "CNPJ",
   "STATUS CATMAN",
   "CHAVE_ORIGEM",
   "CRIADO_EM",
@@ -58,58 +73,93 @@ const ND_HEADERS = [
   "SCRIPT_VERSION"
 ];
 
-function doGetNd() {
-  return json_({
+function ndWebDoGet() {
+  return ndWebJson_({
     ok: true,
     app: "Makers Investment ND Web App",
-    version: SCRIPT_VERSION
+    version: ND_WEB_SCRIPT_VERSION
   });
 }
 
-function doPostNd(e) {
-  try {
-    const payload = JSON.parse((e.postData && e.postData.contents) || "{}");
-    assertSecret_(payload.secret);
+function doGetNd(e) {
+  return ndWebDoGet(e);
+}
 
-    if (payload.action === "create_nds") {
-      return json_(createNds_(payload.rows || []));
+function ndWebDoPost(e, parsedPayload) {
+  try {
+    const payload = parsedPayload || JSON.parse((e && e.postData && e.postData.contents) || "{}");
+    ndWebAssertSecret_(payload.secret);
+
+    if (payload.action !== "create_nds") {
+      return ndWebJson_({ ok: false, error: "Acao nao suportada pelo nd.gs." });
     }
 
-    return json_(updateMakerCell_(payload));
+    return ndWebJson_(ndWebCreateNds_(payload.rows || []));
   } catch (error) {
-    return json_({
+    return ndWebJson_({
       ok: false,
-      error: String(error && error.message ? error.message : error)
+      error: String(error && error.message ? error.message : error),
+      version: ND_WEB_SCRIPT_VERSION
     });
   }
 }
 
-/**
- * Se voce quiser manter seu doPost antigo, deixe nele este roteamento:
- *
- * const payload = JSON.parse(e.postData.contents || "{}");
- * if (payload.action === "create_nds") return doPostNd(e);
- *
- * O restante do doPost antigo pode continuar editando celulas do Maker.
- */
+function doPostNd(e) {
+  return ndWebDoPost(e);
+}
 
-function createNds_(rows) {
-  const ss = SpreadsheetApp.openById(MAKER_SPREADSHEET_ID);
-  const sheet = getSheetByGid_(ss, ND_SHEET_GID) || ss.getSheetByName(ND_SHEET_FALLBACK_NAME) || ss.insertSheet(ND_SHEET_FALLBACK_NAME);
-  const headerMap = ensureHeaders_(sheet, ND_HEADERS);
+function autorizarMakersInvestmentNd() {
+  const rootFolder = DriveApp.getFolderById(ND_WEB_ROOT_FOLDER_ID);
+  const folderName = rootFolder.getName();
+  const templateName = DriveApp.getFileById(ND_WEB_TEMPLATE_DOC_ID).getName();
+  const spreadsheetName = SpreadsheetApp.openById(ND_WEB_MAKER_SPREADSHEET_ID).getName();
+  const catmanCsvStatus = UrlFetchApp.fetch(ND_WEB_CATMAN_CSV_URL).getResponseCode();
+  const tempFolder = rootFolder.createFolder("_teste_permissao_makers_investment");
+  tempFolder.setTrashed(true);
+
+  Logger.log("Pasta raiz: " + folderName);
+  Logger.log("Template: " + templateName);
+  Logger.log("Planilha: " + spreadsheetName);
+  Logger.log("CSV Catman status: " + catmanCsvStatus);
+  Logger.log("Permissao de criacao no Drive OK.");
+
+  return {
+    ok: true,
+    folderName,
+    templateName,
+    spreadsheetName,
+    catmanCsvStatus,
+    driveWritePermission: true
+  };
+}
+
+function ndWebCreateNds_(rows) {
+  if (!Array.isArray(rows)) throw new Error("rows precisa ser uma lista.");
+
+  const ss = SpreadsheetApp.openById(ND_WEB_MAKER_SPREADSHEET_ID);
+  const sheet = ndWebGetSheetByGid_(ss, ND_WEB_ND_SHEET_GID)
+    || ss.getSheetByName(ND_WEB_ND_SHEET_FALLBACK_NAME)
+    || ss.insertSheet(ND_WEB_ND_SHEET_FALLBACK_NAME);
+
+  const headerMap = ndWebEnsureHeaders_(sheet, ND_WEB_HEADERS);
   const values = sheet.getDataRange().getValues();
   const existingRows = values.slice(1);
-  const existingKeys = collectExistingKeys_(existingRows, headerMap);
-  let nextNd = Math.max(FIRST_ND_NUMBER, getMaxNd_(existingRows, headerMap) + 1);
+  const existingKeys = ndWebCollectExistingKeys_(existingRows, headerMap);
+  let nextNd = Math.max(ND_WEB_FIRST_ND_NUMBER, ndWebGetMaxNd_(existingRows, headerMap) + 1);
   const now = Utilities.formatDate(new Date(), "GMT-3", "yyyy-MM-dd HH:mm:ss");
   const rowsToAppend = [];
+  const errors = [];
   let created = 0;
   let skipped = 0;
 
-  rows.forEach((input) => {
-    const sourceKeys = Array.isArray(input.sourceKeys) ? input.sourceKeys.filter(Boolean) : [];
-    const fallbackKeys = makeRecordKeys_(input);
-    const allKeys = sourceKeys.length ? sourceKeys : fallbackKeys;
+  rows.forEach((input, index) => {
+    const rowInput = input || {};
+    const valorNumber = ndWebParseNumber_(rowInput.valorValidado);
+    const sourceKeys = Array.isArray(rowInput.sourceKeys)
+      ? rowInput.sourceKeys.filter(ndWebIsSpecificRecordKey_)
+      : [];
+    const fallbackKeys = ndWebMakeRecordKeys_(rowInput);
+    const allKeys = ndWebUnique_([].concat(sourceKeys, fallbackKeys));
     const alreadyExists = allKeys.some((key) => existingKeys.has(key));
 
     if (alreadyExists) {
@@ -117,15 +167,30 @@ function createNds_(rows) {
       return;
     }
 
+    if (!String(rowInput.maker || "").trim()) {
+      skipped += 1;
+      errors.push({ index, error: "Maker vazio." });
+      return;
+    }
+
+    if (!valorNumber) {
+      skipped += 1;
+      errors.push({ index, maker: rowInput.maker || "", error: "Valor Emissao ND vazio ou zero." });
+      return;
+    }
+
     const nNd = nextNd;
     nextNd += 1;
 
+    const info = ndWebLookupMakerInfo_(ss, rowInput);
+    const legacyRow = ndWebBuildLegacyPdfRow_(rowInput, nNd, info);
     let link = "";
     let rowStatus = "ERRO PDF";
     let pdfStatus = "NAO GERADO";
     let pdfError = "";
+
     try {
-      link = createPdfForNd_(input, nNd);
+      link = ndWebCreateLegacyPdfForNd_(legacyRow, rowInput.ano);
       rowStatus = link ? "GERADO" : "SEM LINK";
       pdfStatus = link ? "GERADO" : "SEM LINK";
     } catch (error) {
@@ -134,23 +199,31 @@ function createNds_(rows) {
       console.error("PDF nao gerado para ND " + nNd + ": " + pdfError);
     }
 
-    rowsToAppend.push(rowObjectToSheetRow_({
+    rowsToAppend.push(ndWebRowObjectToSheetRow_({
       STATUS: rowStatus,
       N_ND: nNd,
-      MAKER: input.maker || "",
-      ANO: input.ano || "",
-      MES: input.mes || "",
-      "VALOR EMISSAO ND": parseNumber_(input.valorValidado),
-      "VALOR FINAL EXTENSO": input.valorFinalExtenso || "",
-      ID_ALIANCA: input.idAlianca || "",
-      CNPJ: input.cnpj || "",
-      "STATUS CATMAN": input.statusCatman || "Valido",
+      MAKER: rowInput.maker || "",
+      VALOR: valorNumber,
+      "VALOR POR EXTENSO": rowInput.valorFinalExtenso || "",
+      "REFER\u00caNCIA": legacyRow[5],
+      CNPJ: legacyRow[6],
+      CNPJ_2: legacyRow[7],
+      "RAZ\u00c3O SOCIAL": legacyRow[8],
+      "ENDERE\u00c7O": legacyRow[9],
+      "DATA DE VENCIMENTO": legacyRow[10],
+      SAP: legacyRow[11],
+      ANO: rowInput.ano || "",
+      MES: rowInput.mes || "",
+      "VALOR EMISSAO ND": valorNumber,
+      "VALOR FINAL EXTENSO": rowInput.valorFinalExtenso || "",
+      ID_ALIANCA: rowInput.idAlianca || "",
+      "STATUS CATMAN": rowInput.statusCatman || "Validado",
       CHAVE_ORIGEM: allKeys[0] || "",
       CRIADO_EM: now,
       LINK: link,
       PDF_STATUS: pdfStatus,
       PDF_ERRO: pdfError,
-      SCRIPT_VERSION: SCRIPT_VERSION
+      SCRIPT_VERSION: ND_WEB_SCRIPT_VERSION
     }, headerMap));
 
     allKeys.forEach((key) => existingKeys.add(key));
@@ -165,122 +238,253 @@ function createNds_(rows) {
     ok: true,
     created,
     skipped,
-    nextNd
+    nextNd,
+    errors,
+    version: ND_WEB_SCRIPT_VERSION
   };
 }
 
-function updateMakerCell_(payload) {
-  const idAlianca = String(payload.idAlianca || "").trim();
-  const columnLabel = String(payload.column || "").trim();
-
-  if (!idAlianca) throw new Error("idAlianca nao informado.");
-  if (!columnLabel) throw new Error("Coluna nao informada.");
-  if (!ALLOWED_EDIT_COLUMNS.map(normalizeHeader_).includes(normalizeHeader_(columnLabel))) {
-    throw new Error("Coluna nao permitida: " + columnLabel);
-  }
-
-  const ss = SpreadsheetApp.openById(MAKER_SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(MAKER_SHEET_NAME);
-  if (!sheet) throw new Error("Aba Maker nao encontrada.");
-
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) throw new Error("Aba Maker sem dados.");
-
-  const headers = values[0].map(String);
-  const idCol = findHeaderIndex_(headers, ["id_alianca", "id alianca", "id alianza"]);
-  const targetCol = findHeaderIndex_(headers, [columnLabel]);
-
-  if (idCol < 0) throw new Error("Coluna ID_ALIANCA nao encontrada.");
-  if (targetCol < 0) throw new Error("Coluna destino nao encontrada: " + columnLabel);
-
-  const rowIndex = values.findIndex((row, index) => index > 0 && String(row[idCol]).trim() === idAlianca);
-  if (rowIndex < 0) throw new Error("ID_ALIANCA nao encontrado: " + idAlianca);
-
-  sheet.getRange(rowIndex + 1, targetCol + 1).setValue(payload.value || "");
-
-  return {
-    ok: true,
-    updated: 1
-  };
-}
-
-function createPdfForNd_(input, nNd) {
-  if (!ROOT_FOLDER_ID || !TEMPLATE_DOC_ID) return "";
-
+function ndWebBuildLegacyPdfRow_(input, nNd, info) {
   const year = input.ano || new Date().getFullYear();
-  const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
-  const folder = getOrCreateFolder_(root, String(year));
-  const fileBaseName = "ND " + nNd + "." + year + "_" + sanitizeFilename_(input.maker || "Maker");
-  const existingPdf = folder.getFilesByName(fileBaseName + ".pdf");
+  const reference = ndWebBuildReference_(input.mes, year);
+  const cnpj = input.cnpj || info.cnpj || "";
+  const cnpj2 = ndWebCleanCnpj_(cnpj);
+  const valorNumber = ndWebParseNumber_(input.valorValidado);
+  const dueDate = ndWebCalculateDueDate_(new Date());
 
-  if (existingPdf.hasNext()) {
-    return existingPdf.next().getUrl();
+  return [
+    "",
+    nNd,
+    input.maker || "",
+    valorNumber,
+    input.valorFinalExtenso || "",
+    reference,
+    cnpj,
+    cnpj2,
+    info.razao || input.maker || "",
+    info.endereco || "",
+    dueDate,
+    input.sap || ""
+  ];
+}
+
+function ndWebCreateLegacyPdfForNd_(linha, yearOverride) {
+  if (!ND_WEB_ROOT_FOLDER_ID) throw new Error("ND_WEB_ROOT_FOLDER_ID vazio.");
+  if (!ND_WEB_TEMPLATE_DOC_ID) throw new Error("ND_WEB_TEMPLATE_DOC_ID vazio.");
+
+  const dataHoje = new Date();
+  const year = yearOverride || dataHoje.getFullYear();
+  const nNd = linha[1];
+  const referencia = linha[5] || "";
+  const cnpj = linha[6] || "";
+  const razaoSocial = linha[8] || linha[2] || "Maker";
+  const pastaRaiz = DriveApp.getFolderById(ND_WEB_ROOT_FOLDER_ID);
+  const pastaDestino = ndWebGetTargetFolderForReference_(pastaRaiz, referencia);
+  const nomeArq = "ND " + nNd + "." + year + "_" + ndWebSanitizeFilename_(razaoSocial) + "_" + ndWebSanitizeFilename_(cnpj);
+  const arquivoExistente = pastaDestino.getFilesByName(nomeArq + ".pdf");
+
+  if (arquivoExistente.hasNext()) {
+    return arquivoExistente.next().getUrl();
   }
 
-  const template = DriveApp.getFileById(TEMPLATE_DOC_ID);
-  const copy = template.makeCopy(fileBaseName, folder);
-  const doc = DocumentApp.openById(copy.getId());
+  const copia = DriveApp.getFileById(ND_WEB_TEMPLATE_DOC_ID).makeCopy(nomeArq, pastaDestino);
+  const doc = DocumentApp.openById(copia.getId());
   const body = doc.getBody();
-  const today = new Date();
-  const dateText = Utilities.formatDate(today, "GMT-3", "dd/MM/yyyy");
-  const reference = "Makers Investment " + (input.mes || "") + " " + year;
+  const diasSemana = ["domingo", "segunda-feira", "ter\u00e7a-feira", "quarta-feira", "quinta-feira", "sexta-feira", "s\u00e1bado"];
+  const dataExtenso = dataHoje.getDate() + " de " + ND_WEB_MESES_EXTENSO[dataHoje.getMonth()] + " de " + year;
 
-  replaceBodyText_(body, "{N_ND}", nNd);
-  replaceBodyText_(body, "{ANO}", year);
-  replaceBodyText_(body, "{MAKER}", input.maker || "");
-  replaceBodyText_(body, "{RAZÃO SOCIAL}", input.razaoSocial || input.maker || "");
-  replaceBodyText_(body, "{CNPJ}", input.cnpj || "");
-  replaceBodyText_(body, "{VALOR}", formatCurrency_(input.valorValidado));
-  replaceBodyText_(body, "{VALOR POR EXTENSO}", input.valorFinalExtenso || "");
-  replaceBodyText_(body, "{REFERÊNCIA}", reference);
-  replaceBodyText_(body, "{DATA DE VENCIMENTO}", input.dataVencimento || dateText);
-  replaceBodyText_(body, "{data_por_extenso}", dateText);
-  replaceBodyText_(body, "{SAP}", input.sap || "");
-  replaceBodyText_(body, "{ENDEREÇO}", input.endereco || "");
+  ndWebReplaceBodyText_(body, "{N_ND}", nNd);
+  ndWebReplaceBodyText_(body, "{ANO}", year);
+  ndWebReplaceBodyText_(body, "{nome_semana}", diasSemana[dataHoje.getDay()]);
+  ndWebReplaceBodyText_(body, "{data_por_extenso}", dataExtenso);
+  ndWebReplaceBodyText_(body, "{RAZ\u00c3O SOCIAL}", razaoSocial);
+  ndWebReplaceBodyText_(body, "{CNPJ}", cnpj);
+  ndWebReplaceBodyText_(body, "{ENDERE\u00c7O}", linha[9] || "");
+  ndWebReplaceBodyText_(body, "{VALOR}", ndWebFormatCurrency_(linha[3]));
+  ndWebReplaceBodyText_(body, "{VALOR POR EXTENSO}", linha[4] || "");
+  ndWebReplaceBodyText_(body, "{DATA DE VENCIMENTO}", ndWebFormatDateOrToday_(linha[10], dataHoje));
+  ndWebReplaceBodyText_(body, "{REFER\u00caNCIA}", referencia);
+  ndWebReplaceBodyText_(body, "{SAP}", linha[11] || "");
 
   doc.saveAndClose();
 
-  const pdfBlob = copy.getAs(MimeType.PDF).setName(fileBaseName + ".pdf");
-  const pdf = folder.createFile(pdfBlob);
-  copy.setTrashed(true);
+  const pdfBlob = copia.getAs(MimeType.PDF).setName(nomeArq + ".pdf");
+  const pdf = pastaDestino.createFile(pdfBlob);
+  copia.setTrashed(true);
   return pdf.getUrl();
 }
 
-function collectExistingKeys_(rows, headerMap) {
+function ndWebLookupMakerInfo_(spreadsheet, input) {
+  const fallback = {
+    cnpj: input.cnpj || "",
+    cnpj2: ndWebCleanCnpj_(input.cnpj || ""),
+    razao: input.maker || "",
+    endereco: ""
+  };
+
+  const catmanSheet = spreadsheet.getSheetByName(ND_WEB_CATMAN_SHEET_NAME);
+  const catmanInfo = catmanSheet ? ndWebFindMakerInTable_(catmanSheet.getDataRange().getValues(), input, fallback) : null;
+  if (catmanInfo) return catmanInfo;
+
+  try {
+    const csv = UrlFetchApp.fetch(ND_WEB_CATMAN_CSV_URL).getContentText();
+    const csvRows = Utilities.parseCsv(csv);
+    const csvInfo = ndWebFindMakerInTable_(csvRows, input, fallback);
+    if (csvInfo) return csvInfo;
+  } catch (error) {
+    console.error("Nao foi possivel ler CSV Catman: " + String(error && error.message ? error.message : error));
+  }
+
+  const cnpjSheet = spreadsheet.getSheetByName("CNPJ");
+  if (!cnpjSheet) return fallback;
+
+  const makerKey = ndWebNormalizeHeader_(input.maker);
+  const rows = cnpjSheet.getDataRange().getValues();
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (ndWebNormalizeHeader_(row[0]) === makerKey) {
+      const cnpj = row[1] || fallback.cnpj;
+      return {
+        cnpj,
+        cnpj2: ndWebCleanCnpj_(cnpj),
+        razao: row[3] || fallback.razao,
+        endereco: row[4] || fallback.endereco
+      };
+    }
+  }
+  return fallback;
+}
+
+function ndWebFindMakerInTable_(rows, input, fallback) {
+  if (!rows || rows.length < 2) return null;
+
+  const headers = rows[0].map(String);
+  const idCol = ndWebFindHeaderColumn_(headers, ["ID_ALIANCA", "ID ALIANCA", "ID ALIANZA"]);
+  const makerCol = ndWebFindHeaderColumn_(headers, ["MAKER"]);
+  const cnpjCol = ndWebFindHeaderColumn_(headers, ["CNPJ"]);
+  const razaoCol = ndWebFindHeaderColumn_(headers, ["RAZAO SOCIAL", "RAZ\u00c3O SOCIAL"]);
+  const enderecoCol = ndWebFindHeaderColumn_(headers, ["ENDERECO COMPLETO", "ENDERE\u00c7O COMPLETO", "ENDERECO", "ENDERE\u00c7O"]);
+  const inputId = String(input.idAlianca || "").trim();
+  const inputMaker = ndWebNormalizeHeader_(input.maker);
+
+  if (makerCol < 0 && idCol < 0) return null;
+
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    const sameId = inputId && idCol >= 0 && String(row[idCol] || "").trim() === inputId;
+    const sameMaker = inputMaker && makerCol >= 0 && ndWebNormalizeHeader_(row[makerCol]) === inputMaker;
+
+    if (sameId || sameMaker) {
+      const cnpj = cnpjCol >= 0 ? row[cnpjCol] || fallback.cnpj : fallback.cnpj;
+      return {
+        cnpj,
+        cnpj2: ndWebCleanCnpj_(cnpj),
+        razao: razaoCol >= 0 ? row[razaoCol] || fallback.razao : fallback.razao,
+        endereco: enderecoCol >= 0 ? row[enderecoCol] || fallback.endereco : fallback.endereco
+      };
+    }
+  }
+
+  return null;
+}
+
+function ndWebFindHeaderColumn_(headers, candidates) {
+  const normalizedCandidates = candidates.map(ndWebNormalizeHeader_);
+  return headers.findIndex((header) => normalizedCandidates.includes(ndWebNormalizeHeader_(header)));
+}
+
+function ndWebGetTargetFolderForReference_(root, reference) {
+  const normalizedReference = ndWebNormalizeHeader_(reference);
+  let folderName = "Outros";
+
+  for (let index = 0; index < ND_WEB_MESES_EXTENSO.length; index += 1) {
+    if (normalizedReference.includes(ndWebNormalizeHeader_(ND_WEB_MESES_EXTENSO[index]))) {
+      folderName = ND_WEB_MESES_NOMEADOS[index];
+      break;
+    }
+  }
+
+  const folders = root.getFoldersByName(folderName);
+  return folders.hasNext() ? folders.next() : root.createFolder(folderName);
+}
+
+function ndWebBuildReference_(month, year) {
+  const monthNumber = Number(String(month || "").replace(/[^\d]/g, ""));
+  const monthName = monthNumber >= 1 && monthNumber <= 12 ? ND_WEB_MESES_EXTENSO[monthNumber - 1] : "";
+  const monthText = monthName ? monthName.charAt(0).toUpperCase() + monthName.slice(1) : month || "";
+  return ["Makers Investment", monthText, year].filter(Boolean).join(" ");
+}
+
+function ndWebFormatDateOrToday_(value, fallbackDate) {
+  if (value instanceof Date && !isNaN(value)) {
+    return Utilities.formatDate(value, "GMT-3", "dd/MM/yyyy");
+  }
+  if (value !== "" && value != null) return String(value);
+  return Utilities.formatDate(fallbackDate, "GMT-3", "dd/MM/yyyy");
+}
+
+function ndWebCalculateDueDate_(startDate) {
+  const dueDate = new Date(startDate.getTime());
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const day = dueDate.getDay();
+  if (day === 6) dueDate.setDate(dueDate.getDate() + 2);
+  if (day === 0) dueDate.setDate(dueDate.getDate() + 1);
+
+  return dueDate;
+}
+
+function ndWebCollectExistingKeys_(rows, headerMap) {
   const keys = new Set();
 
   rows.forEach((row) => {
-    const sourceKey = valueByHeader_(row, headerMap, "CHAVE_ORIGEM");
-    if (sourceKey) keys.add(String(sourceKey));
+    const sourceKey = ndWebValueByHeader_(row, headerMap, "CHAVE_ORIGEM");
+    if (ndWebIsSpecificRecordKey_(sourceKey)) keys.add(String(sourceKey));
 
-    makeRecordKeys_({
-      idAlianca: valueByHeader_(row, headerMap, "ID_ALIANCA"),
-      maker: valueByHeader_(row, headerMap, "MAKER"),
-      ano: valueByHeader_(row, headerMap, "ANO"),
-      mes: valueByHeader_(row, headerMap, "MES"),
-      valorValidado: valueByHeader_(row, headerMap, "VALOR EMISSAO ND") || valueByHeader_(row, headerMap, "VALOR VALIDADO") || valueByHeader_(row, headerMap, "VALOR")
+    ndWebMakeRecordKeys_({
+      idAlianca: ndWebValueByHeader_(row, headerMap, "ID_ALIANCA"),
+      maker: ndWebValueByHeader_(row, headerMap, "MAKER"),
+      ano: ndWebValueByHeader_(row, headerMap, "ANO"),
+      mes: ndWebValueByHeader_(row, headerMap, "MES"),
+      valorValidado: ndWebValueByHeader_(row, headerMap, "VALOR EMISSAO ND")
+        || ndWebValueByHeader_(row, headerMap, "VALOR VALIDADO")
+        || ndWebValueByHeader_(row, headerMap, "VALOR")
     }).forEach((key) => keys.add(key));
   });
 
   return keys;
 }
 
-function makeRecordKeys_(input) {
+function ndWebIsSpecificRecordKey_(key) {
+  const value = String(key || "");
+  return value.indexOf("id-year-month-value:") === 0 || value.indexOf("maker-year-month-value:") === 0;
+}
+
+function ndWebUnique_(values) {
+  return values.filter((value, index, list) => value && list.indexOf(value) === index);
+}
+
+function ndWebMakeRecordKeys_(input) {
   const keys = [];
   const idAlianca = String(input.idAlianca || "").trim();
-  const maker = normalizeHeader_(input.maker);
+  const maker = ndWebNormalizeHeader_(input.maker);
   const year = String(input.ano || "").trim();
   const month = String(input.mes || "").trim();
-  const value = parseNumber_(input.valorValidado).toFixed(2);
+  const value = ndWebParseNumber_(input.valorValidado).toFixed(2);
 
-  if (idAlianca) keys.push("id:" + idAlianca);
-  if (maker && year && month && value !== "0.00") keys.push("maker-year-month-value:" + maker + "|" + year + "|" + month + "|" + value);
+  if (idAlianca && year && month && value !== "0.00") {
+    keys.push("id-year-month-value:" + idAlianca + "|" + year + "|" + month + "|" + value);
+  }
+
+  if (maker && year && month && value !== "0.00") {
+    keys.push("maker-year-month-value:" + maker + "|" + year + "|" + month + "|" + value);
+  }
 
   return keys;
 }
 
-function getMaxNd_(rows, headerMap) {
-  const ndCol = headerMap[normalizeHeader_("N_ND")];
+function ndWebGetMaxNd_(rows, headerMap) {
+  const ndCol = headerMap[ndWebNormalizeHeader_("N_ND")];
   if (!ndCol) return 0;
 
   return rows.reduce((max, row) => {
@@ -289,14 +493,14 @@ function getMaxNd_(rows, headerMap) {
   }, 0);
 }
 
-function ensureHeaders_(sheet, requiredHeaders) {
+function ndWebEnsureHeaders_(sheet, requiredHeaders) {
   if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
     sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]).setFontWeight("bold");
   }
 
   let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-  const normalized = headers.map(normalizeHeader_);
-  const missing = requiredHeaders.filter((header) => !normalized.includes(normalizeHeader_(header)));
+  const normalized = headers.map(ndWebNormalizeHeader_);
+  const missing = requiredHeaders.filter((header) => !normalized.includes(ndWebNormalizeHeader_(header)));
 
   if (missing.length) {
     sheet.getRange(1, headers.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold");
@@ -304,54 +508,55 @@ function ensureHeaders_(sheet, requiredHeaders) {
   }
 
   return headers.reduce((map, header, index) => {
-    map[normalizeHeader_(header)] = index + 1;
+    map[ndWebNormalizeHeader_(header)] = index + 1;
     return map;
   }, {});
 }
 
-function rowObjectToSheetRow_(object, headerMap) {
+function ndWebRowObjectToSheetRow_(object, headerMap) {
   const outputLength = Math.max.apply(null, Object.keys(headerMap).map((key) => headerMap[key]));
   const output = Array(outputLength).fill("");
 
   Object.keys(object).forEach((header) => {
-    const col = headerMap[normalizeHeader_(header)];
+    const col = headerMap[ndWebNormalizeHeader_(header)];
     if (col) output[col - 1] = object[header];
   });
 
   return output;
 }
 
-function valueByHeader_(row, headerMap, header) {
-  const col = headerMap[normalizeHeader_(header)];
+function ndWebValueByHeader_(row, headerMap, header) {
+  const col = headerMap[ndWebNormalizeHeader_(header)];
   return col ? row[col - 1] : "";
 }
 
-function getSheetByGid_(spreadsheet, gid) {
+function ndWebGetSheetByGid_(spreadsheet, gid) {
   const target = Number(gid);
   return spreadsheet.getSheets().find((sheet) => sheet.getSheetId() === target) || null;
 }
 
-function getOrCreateFolder_(parent, name) {
-  const folders = parent.getFoldersByName(name);
-  return folders.hasNext() ? folders.next() : parent.createFolder(name);
+function ndWebReplaceBodyText_(body, token, value) {
+  body.replaceText(ndWebEscapeRegExp_(token), String(value == null ? "" : value));
 }
 
-function findHeaderIndex_(headers, candidates) {
-  const normalizedCandidates = candidates.map(normalizeHeader_);
-  return headers.findIndex((header) => normalizedCandidates.includes(normalizeHeader_(header)));
-}
+function ndWebAssertSecret_(secret) {
+  let propertySecret = "";
+  try {
+    propertySecret = PropertiesService.getScriptProperties().getProperty("SECRET") || "";
+  } catch (error) {
+    propertySecret = "";
+  }
 
-function replaceBodyText_(body, token, value) {
-  body.replaceText(escapeRegExp_(token), String(value == null ? "" : value));
-}
+  const makerSecret = typeof MAKER_WRITE_CONFIG !== "undefined" && MAKER_WRITE_CONFIG.SECRET
+    ? MAKER_WRITE_CONFIG.SECRET
+    : "";
+  const configured = propertySecret || ND_WEB_WRITE_SECRET || makerSecret;
 
-function assertSecret_(secret) {
-  const configured = PropertiesService.getScriptProperties().getProperty("SECRET") || WRITE_SECRET;
   if (!configured) throw new Error("Configure a propriedade SECRET no Apps Script.");
   if (String(secret || "") !== String(configured)) throw new Error("Token invalido.");
 }
 
-function parseNumber_(value) {
+function ndWebParseNumber_(value) {
   if (typeof value === "number") return value;
   const raw = String(value || "").trim();
   if (!raw) return 0;
@@ -362,14 +567,18 @@ function parseNumber_(value) {
   return Number(cleaned.replace(/,/g, "")) || 0;
 }
 
-function formatCurrency_(value) {
+function ndWebCleanCnpj_(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function ndWebFormatCurrency_(value) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL"
-  }).format(parseNumber_(value));
+  }).format(ndWebParseNumber_(value));
 }
 
-function sanitizeFilename_(value) {
+function ndWebSanitizeFilename_(value) {
   return String(value || "")
     .replace(/[\\/:*?"<>|#%{}~&]/g, " ")
     .replace(/\s+/g, " ")
@@ -377,7 +586,7 @@ function sanitizeFilename_(value) {
     .slice(0, 120);
 }
 
-function normalizeHeader_(value) {
+function ndWebNormalizeHeader_(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -386,11 +595,11 @@ function normalizeHeader_(value) {
     .toLowerCase();
 }
 
-function escapeRegExp_(value) {
+function ndWebEscapeRegExp_(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function json_(payload) {
+function ndWebJson_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);

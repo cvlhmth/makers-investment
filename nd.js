@@ -352,7 +352,7 @@ async function createNds() {
   const readyRecords = ndState.records.filter((record) => record.status === ND_STATUS.ready);
 
   if (!readyRecords.length) {
-    updateNdWriteStatus("Nenhuma ND pronta: precisa Status Catman Valido, Valor Emissao ND e Valor por extenso", "error");
+    updateNdWriteStatus("Nenhuma ND pronta: precisa Status Catman Validado, Valor Emissao ND e Valor por extenso", "error");
     return;
   }
 
@@ -537,7 +537,7 @@ function buildHistoryKeys(rows) {
     }).forEach((key) => keys.add(key));
 
     const sourceKey = getRowValue(row, ["chave origem", "source key", "source_key"]);
-    if (sourceKey) {
+    if (isSpecificRecordKey(sourceKey)) {
       keys.add(sourceKey);
     }
   });
@@ -553,8 +553,8 @@ function makeRecordKeys({ idAlianca, maker, year, month, valorValidado }) {
   const normalizedMonth = String(month || "").trim();
   const normalizedValue = parseFlexibleNumber(valorValidado).toFixed(2);
 
-  if (normalizedId) {
-    keys.push(`id:${normalizedId}`);
+  if (normalizedId && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
+    keys.push(`id-year-month-value:${normalizedId}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);
   }
 
   if (normalizedMaker && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
@@ -562,6 +562,11 @@ function makeRecordKeys({ idAlianca, maker, year, month, valorValidado }) {
   }
 
   return keys;
+}
+
+function isSpecificRecordKey(key) {
+  const value = String(key || "");
+  return value.startsWith("id-year-month-value:") || value.startsWith("maker-year-month-value:");
 }
 
 function getMaxNdNumber(rows) {
@@ -607,7 +612,7 @@ function isApprovedCatman(value) {
 function displayCatmanStatus(value) {
   const normalized = normalizeHeader(value);
   if (["approved", "aprovado", "valido", "validado"].includes(normalized)) {
-    return "Valido";
+    return "Validado";
   }
   if (normalized.includes("aguardando") || ["pending", "pendente", "validar"].includes(normalized)) {
     return "Aguardando Valida\u00e7\u00e3o";
