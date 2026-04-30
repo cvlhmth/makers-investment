@@ -300,7 +300,9 @@ function renderNdMetrics() {
   ndEls.metricCreated.textContent = String(created);
   ndEls.metricBlocked.textContent = String(blocked);
   ndEls.metricNext.textContent = String(ndState.nextNd);
-  ndEls.createButton.disabled = ready === 0;
+  ndEls.createButton.title = ready === 0
+    ? "Nenhuma ND pronta. Confira Status Catman, Valor Emissao ND e Valor por extenso."
+    : `Criar ${ready} NDs prontas`;
 }
 
 function renderNdTable() {
@@ -350,7 +352,7 @@ async function createNds() {
   const readyRecords = ndState.records.filter((record) => record.status === ND_STATUS.ready);
 
   if (!readyRecords.length) {
-    updateNdWriteStatus("Nenhuma ND pronta para criar", "error");
+    updateNdWriteStatus("Nenhuma ND pronta: precisa Status Catman Valido, Valor Emissao ND e Valor por extenso", "error");
     return;
   }
 
