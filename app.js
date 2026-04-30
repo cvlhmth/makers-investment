@@ -184,13 +184,22 @@ const STATUS_CATMAN_OPTIONS = [
 
 const EDITABLE_TEXT_COLUMNS = [
   "valor final",
+  "valor emissao nd",
+  "valor_emissao_nd",
   "obs",
   "observacao",
   "emissao",
+  "data emissao",
+  "data_emissao",
+  "data_envio",
   "envio",
   "previsao pgt",
+  "previsao_pgto",
   "previsao pagamento",
   "link",
+  "link_nd",
+  "link comprovante",
+  "link_comprovante",
   "comprovante link"
 ];
 
@@ -826,7 +835,7 @@ function inferGroup(label, index) {
     return "validacao";
   }
 
-  if (["emissao", "envio", "previsao pgt", "previsao pagamento", "link"].includes(normalized)) {
+  if (["emissao", "data emissao", "data_emissao", "data_envio", "envio", "previsao pgt", "previsao_pgto", "previsao pagamento", "link", "link_nd"].includes(normalized)) {
     return "debito";
   }
 
@@ -856,12 +865,30 @@ function inferType(label) {
 
 function inferEditable(label) {
   const normalized = normalizeHeader(label);
-  return normalized.includes("status") || EDITABLE_TEXT_COLUMNS.includes(normalized);
+  return normalized.includes("status") || normalized.includes("link") || EDITABLE_TEXT_COLUMNS.includes(normalized);
 }
 
 function inferAmber(label) {
   const normalized = normalizeHeader(label);
-  return ["catman", "valor final", "status catman", "emissao", "envio", "previsao pgt", "link"].includes(normalized);
+  return [
+    "catman",
+    "valor final",
+    "valor emissao nd",
+    "valor_emissao_nd",
+    "status catman",
+    "emissao",
+    "data emissao",
+    "data_emissao",
+    "data_envio",
+    "envio",
+    "previsao pgt",
+    "previsao_pgto",
+    "link",
+    "link_nd",
+    "link comprovante",
+    "link_comprovante",
+    "comprovante link"
+  ].includes(normalized);
 }
 
 function applyFiltersAndRender() {
