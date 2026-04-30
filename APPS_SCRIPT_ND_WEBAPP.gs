@@ -30,14 +30,16 @@ const ND_HEADERS = [
   "MAKER",
   "ANO",
   "MES",
-  "VALOR VALIDADO",
+  "VALOR EMISSAO ND",
   "VALOR FINAL EXTENSO",
   "ID_ALIANCA",
   "CNPJ",
   "STATUS CATMAN",
   "CHAVE_ORIGEM",
   "CRIADO_EM",
-  "LINK"
+  "LINK",
+  "PDF_STATUS",
+  "PDF_ERRO"
 ];
 
 function doGet() {
@@ -93,10 +95,14 @@ function createNds_(rows) {
     nextNd += 1;
 
     let link = "";
+    let pdfStatus = "NAO GERADO";
+    let pdfError = "";
     try {
       link = createPdfForNd_(input, nNd);
+      pdfStatus = link ? "GERADO" : "SEM LINK";
     } catch (error) {
-      console.error("PDF nao gerado para ND " + nNd + ": " + error.message);
+      pdfError = String(error && error.message ? error.message : error);
+      console.error("PDF nao gerado para ND " + nNd + ": " + pdfError);
     }
 
     rowsToAppend.push(rowObjectToSheetRow_({
@@ -105,14 +111,16 @@ function createNds_(rows) {
       MAKER: input.maker || "",
       ANO: input.ano || "",
       MES: input.mes || "",
-      "VALOR VALIDADO": parseNumber_(input.valorValidado),
+      "VALOR EMISSAO ND": parseNumber_(input.valorValidado),
       "VALOR FINAL EXTENSO": input.valorFinalExtenso || "",
       ID_ALIANCA: input.idAlianca || "",
       CNPJ: input.cnpj || "",
       "STATUS CATMAN": input.statusCatman || "Valido",
       CHAVE_ORIGEM: allKeys[0] || "",
       CRIADO_EM: now,
-      LINK: link
+      LINK: link,
+      PDF_STATUS: pdfStatus,
+      PDF_ERRO: pdfError
     }, headerMap));
 
     allKeys.forEach((key) => existingKeys.add(key));
@@ -216,7 +224,8 @@ function collectExistingKeys_(rows, headerMap) {
       idAlianca: valueByHeader_(row, headerMap, "ID_ALIANCA"),
       maker: valueByHeader_(row, headerMap, "MAKER"),
       ano: valueByHeader_(row, headerMap, "ANO"),
-      valorValidado: valueByHeader_(row, headerMap, "VALOR VALIDADO") || valueByHeader_(row, headerMap, "VALOR")
+      mes: valueByHeader_(row, headerMap, "MES"),
+      valorValidado: valueByHeader_(row, headerMap, "VALOR EMISSAO ND") || valueByHeader_(row, headerMap, "VALOR VALIDADO") || valueByHeader_(row, headerMap, "VALOR")
     }).forEach((key) => keys.add(key));
   });
 
@@ -228,11 +237,11 @@ function makeRecordKeys_(input) {
   const idAlianca = String(input.idAlianca || "").trim();
   const maker = normalizeHeader_(input.maker);
   const year = String(input.ano || "").trim();
+  const month = String(input.mes || "").trim();
   const value = parseNumber_(input.valorValidado).toFixed(2);
 
   if (idAlianca) keys.push("id:" + idAlianca);
-  if (maker && year && value !== "0.00") keys.push("maker-year-value:" + maker + "|" + year + "|" + value);
-  if (maker && value !== "0.00") keys.push("maker-value:" + maker + "|" + value);
+  if (maker && year && month && value !== "0.00") keys.push("maker-year-month-value:" + maker + "|" + year + "|" + month + "|" + value);
 
   return keys;
 }

@@ -1,14 +1,13 @@
 const ND_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=0&single=true&output=csv",
   ndHistorySource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1349527717&single=true&output=csv",
-  writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
+  writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
   firstNd: 358
 };
 
 const ND_STORAGE_KEYS = {
   writeEndpoint: "sheets-dashboard.writeEndpoint",
-  writeSecret: "sheets-dashboard.writeSecret",
-  localCreated: "makers-investment.nd.createdKeys"
+  writeSecret: "sheets-dashboard.writeSecret"
 };
 
 const ND_STATUS = {
@@ -25,7 +24,6 @@ const ndState = {
   records: [],
   filteredRecords: [],
   historyKeys: new Set(),
-  localCreatedKeys: new Set(),
   nextNd: ND_CONFIG.firstNd,
   filters: {
     search: "",
@@ -64,7 +62,6 @@ document.addEventListener("DOMContentLoaded", initNdPage);
 function initNdPage() {
   ndState.writeEndpoint = localStorage.getItem(ND_STORAGE_KEYS.writeEndpoint) || ND_CONFIG.writeEndpoint;
   ndState.writeSecret = localStorage.getItem(ND_STORAGE_KEYS.writeSecret) || "";
-  ndState.localCreatedKeys = new Set(readJson(ND_STORAGE_KEYS.localCreated, []));
 
   ndEls.writeEndpointInput.value = ndState.writeEndpoint;
   ndEls.writeSecretInput.value = ndState.writeSecret;
@@ -161,6 +158,8 @@ function buildNdRecords(rows) {
     const cnpj = getRowValue(row, ["cnpj"]);
     const statusCatman = getRowValue(row, ["status catman"]);
     const valorValidado = getFirstFilledValue(row, [
+      "valor emissao nd",
+      "valor emissão nd",
       "valor validado",
       "valor final",
       "valor final validado",
@@ -176,15 +175,15 @@ function buildNdRecords(rows) {
       "valor extenso"
     ]);
     const valueNumber = parseFlexibleNumber(valorValidado);
-    const sourceKeys = makeRecordKeys({ idAlianca, maker, year, valorValidado });
-    const alreadyCreated = sourceKeys.some((key) => ndState.historyKeys.has(key) || ndState.localCreatedKeys.has(key));
+    const sourceKeys = makeRecordKeys({ idAlianca, maker, year, month, valorValidado });
+    const alreadyCreated = sourceKeys.some((key) => ndState.historyKeys.has(key));
     const eligible = isApprovedCatman(statusCatman);
     const missing = [];
 
     if (!eligible) missing.push("Status Catman pendente");
     if (!maker) missing.push("Maker vazio");
     if (!year) missing.push("Ano vazio");
-    if (!valueNumber) missing.push("Valor validado vazio");
+    if (!valueNumber) missing.push("Valor emissao ND vazio");
     if (!valorFinalExtenso) missing.push("Valor por extenso vazio");
 
     let status = ND_STATUS.blocked;
@@ -386,11 +385,6 @@ async function createNds() {
       })
     });
 
-    readyRecords.forEach((record) => record.sourceKeys.forEach((key) => ndState.localCreatedKeys.add(key)));
-    localStorage.setItem(ND_STORAGE_KEYS.localCreated, JSON.stringify([...ndState.localCreatedKeys]));
-    ndState.historyKeys = new Set([...ndState.historyKeys, ...ndState.localCreatedKeys]);
-    ndState.records = buildNdRecords(ndState.sourceRows);
-    applyNdFiltersAndRender();
     updateNdWriteStatus("Enviado ao Apps Script, atualize para confirmar no Sheets", "ok");
   } catch (error) {
     console.error(error);
@@ -399,7 +393,7 @@ async function createNds() {
 }
 
 function exportReadyNdCsv() {
-  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR VALIDADO", "VALOR FINAL EXTENSO", "STATUS CATMAN", "ID_ALIANCA", "CNPJ"]];
+  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR EMISSAO ND", "VALOR FINAL EXTENSO", "STATUS CATMAN", "ID_ALIANCA", "CNPJ"]];
 
   ndState.records
     .filter((record) => record.status === ND_STATUS.ready)
@@ -533,7 +527,8 @@ function buildHistoryKeys(rows) {
       idAlianca: getRowValue(row, ["id_alianca", "id alianca", "id alianza"]),
       maker: getRowValue(row, ["maker"]),
       year: getFirstFilledValue(row, ["ano", "year"]),
-      valorValidado: getFirstFilledValue(row, ["valor validado", "valor", "valor final", "valor query"])
+      month: getFirstFilledValue(row, ["mes", "mês", "month"]),
+      valorValidado: getFirstFilledValue(row, ["valor emissao nd", "valor emissão nd", "valor validado", "valor", "valor final", "valor query"])
     }).forEach((key) => keys.add(key));
 
     const sourceKey = getRowValue(row, ["chave origem", "source key", "source_key"]);
@@ -545,23 +540,20 @@ function buildHistoryKeys(rows) {
   return keys;
 }
 
-function makeRecordKeys({ idAlianca, maker, year, valorValidado }) {
+function makeRecordKeys({ idAlianca, maker, year, month, valorValidado }) {
   const keys = [];
   const normalizedId = String(idAlianca || "").trim();
   const normalizedMaker = normalizeHeader(maker);
   const normalizedYear = String(year || "").trim();
+  const normalizedMonth = String(month || "").trim();
   const normalizedValue = parseFlexibleNumber(valorValidado).toFixed(2);
 
   if (normalizedId) {
     keys.push(`id:${normalizedId}`);
   }
 
-  if (normalizedMaker && normalizedYear && normalizedValue !== "0.00") {
-    keys.push(`maker-year-value:${normalizedMaker}|${normalizedYear}|${normalizedValue}`);
-  }
-
-  if (normalizedMaker && normalizedValue !== "0.00") {
-    keys.push(`maker-value:${normalizedMaker}|${normalizedValue}`);
+  if (normalizedMaker && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
+    keys.push(`maker-year-month-value:${normalizedMaker}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);
   }
 
   return keys;
