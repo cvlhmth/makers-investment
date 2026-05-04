@@ -1221,7 +1221,7 @@ function setWriteStatus(message, status) {
 }
 
 function renderMetrics() {
-  const queryKey = findColumnKey(["valor query", "vlr query"]);
+  const queryKey = findColumnKey(["valor emissao nd", "valor_emissao_nd", "valor emissão nd"]) || findColumnKey(["valor query", "vlr query"]);
   const executionKey = findColumnKey(["valor_pagamento", "valor pagamento", "valor pgto"]) || findColumnKey(["execucao", "execução"]);
   const diffKey = findColumnKey(["diff", "dif"]);
 
