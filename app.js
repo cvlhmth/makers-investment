@@ -197,7 +197,6 @@ const EDITABLE_TEXT_COLUMNS = [
   "previsao_pgto",
   "previsao pagamento",
   "link",
-  "link_nd",
   "link comprovante",
   "link_comprovante",
   "comprovante link"
@@ -865,6 +864,7 @@ function inferType(label) {
 
 function inferEditable(label) {
   const normalized = normalizeHeader(label);
+  if (normalized === "link_nd" || normalized === "link nd") return false;
   return normalized.includes("status") || normalized.includes("link") || EDITABLE_TEXT_COLUMNS.includes(normalized);
 }
 
@@ -884,7 +884,6 @@ function inferAmber(label) {
     "previsao pgt",
     "previsao_pgto",
     "link",
-    "link_nd",
     "link comprovante",
     "link_comprovante",
     "comprovante link"
