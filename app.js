@@ -910,7 +910,7 @@ function applyFiltersAndRender() {
     if (state.filters.status && String(row[statusFpaKey] || "") !== state.filters.status) return false;
 
     if (state.filters.quick) {
-      const statusValue = normalizeHeader(row[statusFpaKey]);
+      const statusValue = getQuickStatusBucket(row[statusFpaKey]);
 
       if (state.filters.quick === "pending") {
         if (statusValue !== "pending") return false;
@@ -1222,17 +1222,30 @@ function setWriteStatus(message, status) {
 function renderMetrics() {
   const queryKey = findColumnKey(["valor emissao nd", "valor_emissao_nd", "valor emissão nd"]) || findColumnKey(["valor query", "vlr query"]);
   const executionKey = findColumnKey(["valor_pagamento", "valor pagamento", "valor pgto"]) || findColumnKey(["execucao", "execução"]);
-  const diffKey = findColumnKey(["diff", "dif"]);
 
   const totalQuery = sumByKey(state.filteredRows, queryKey);
   const totalExecution = sumByKey(state.filteredRows, executionKey);
-  const totalDiff = diffKey ? sumByKey(state.filteredRows, diffKey) : totalQuery - totalExecution;
+  const totalDiff = totalQuery - totalExecution;
 
   els.metricRows.textContent = String(state.filteredRows.length);
   els.metricQuery.textContent = formatCurrency(totalQuery);
   els.metricExecution.textContent = formatCurrency(totalExecution);
   els.metricDiff.textContent = formatCurrency(totalDiff);
   els.metricDiff.style.color = totalDiff < 0 ? "var(--danger)" : "var(--success)";
+}
+
+function getQuickStatusBucket(value) {
+  const normalized = normalizeHeader(value);
+
+  if (["done", "pago", "paid", "concluido", "finalizado", "aprovado"].includes(normalized)) {
+    return "done";
+  }
+
+  if (["pending", "pendente", "aguardando", "validar", "em analise", "em análise", "in progress"].includes(normalized)) {
+    return "pending";
+  }
+
+  return normalized;
 }
 
 function getCellClass(column, value) {
