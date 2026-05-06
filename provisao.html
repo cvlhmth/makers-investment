@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Makers Investment | Provisão</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell provision-page">
+      <header class="report-hero has-main-nav">
+        <div class="hero-copy">
+          <a class="rappi-logo" href="./index.html" aria-label="Rappi">
+            <img src="./rappi-logo.png" alt="Rappi" />
+          </a>
+
+          <nav class="main-nav" aria-label="Navegação principal">
+            <a href="./index.html">Makers</a>
+            <a class="is-active" href="./provisao.html">Provisão</a>
+            <a href="./nd.html">ND</a>
+          </nav>
+
+          <span class="hero-divider" aria-hidden="true"></span>
+
+          <div class="hero-title">
+            <h1>Makers Investment</h1>
+            <p class="hero-subtitle">Provisão mensal por execução, recebimento e pendências</p>
+            <p class="hero-connection" id="provisionConnectionStatus">Carregando base Maker</p>
+            <p class="hero-contact">Slack: @matheus.carvalho @rita.kamensky</p>
+          </div>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-status">
+            <span class="confidential-badge">CONFIDENCIAL - FP&amp;A</span>
+          </div>
+
+          <div class="topbar-actions">
+            <button class="icon-button" id="provisionRefreshButton" type="button" title="Atualizar dados" aria-label="Atualizar dados">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z" />
+              </svg>
+            </button>
+            <button class="icon-button" id="provisionExportButton" type="button" title="Exportar CSV" aria-label="Exportar CSV">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v10.2l3.6-3.6L17 11l-6 6-6-6 1.4-1.4 3.6 3.6V3h2ZM5 19h14v2H5v-2Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="report-content">
+        <section class="section-heading">
+          <div>
+            <h2>Provisão</h2>
+            <p>Resumo mensal calculado pela base Maker.</p>
+          </div>
+          <span class="period-badge">FX por mês</span>
+        </section>
+
+        <section class="metrics-grid provision-metrics" aria-label="Resumo da provisão">
+          <article class="metric">
+            <span>Meses</span>
+            <strong id="provisionMetricMonths">0</strong>
+          </article>
+          <article class="metric">
+            <span>Valor Execução</span>
+            <strong id="provisionMetricExecution">R$ 0,00</strong>
+          </article>
+          <article class="metric">
+            <span>Zerados</span>
+            <strong id="provisionMetricZero">R$ 0,00</strong>
+          </article>
+          <article class="metric">
+            <span>Recebidos</span>
+            <strong id="provisionMetricReceived">R$ 0,00</strong>
+          </article>
+        </section>
+
+        <section class="workbench provision-workbench">
+          <div class="toolbar">
+            <label>
+              <span>Ano</span>
+              <select id="provisionYearFilter"></select>
+            </label>
+
+            <button class="ghost-button" id="provisionClearFiltersButton" type="button">Limpar</button>
+          </div>
+
+          <div class="table-wrap">
+            <table id="provisionTable">
+              <thead>
+                <tr>
+                  <th>Ano</th>
+                  <th>Mês</th>
+                  <th>FX</th>
+                  <th>Valor Execução</th>
+                  <th>Valor USD</th>
+                  <th>Zerados</th>
+                  <th>Recebidos</th>
+                </tr>
+              </thead>
+              <tbody id="provisionTableBody"></tbody>
+            </table>
+
+            <div class="empty-state" id="provisionEmptyState" hidden>
+              <strong>Nenhum mês encontrado</strong>
+              <span>Atualize a base ou revise os filtros.</span>
+            </div>
+          </div>
+
+          <footer class="table-footer">
+            <span id="provisionRowCount">0 meses</span>
+            <span id="provisionFxStatus">FX salvo no navegador</span>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script src="./provisao.js?v=20260506-provision"></script>
+  </body>
+</html>

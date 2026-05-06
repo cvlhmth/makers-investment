@@ -1631,6 +1631,116 @@ button:disabled,
   background: #fff4f0 !important;
 }
 
+.has-main-nav .hero-copy {
+  gap: 18px;
+}
+
+.has-main-nav .rappi-logo img {
+  width: clamp(112px, 10vw, 148px);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2.4vw, 34px);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.main-nav a {
+  color: var(--rappi-text);
+  border-bottom: 2px solid transparent;
+  padding: 8px 2px;
+  font-size: 0.95rem;
+  font-weight: 720;
+  text-decoration: none;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.main-nav a:hover,
+.main-nav a.is-active {
+  color: var(--rappi-orange);
+  border-bottom-color: var(--rappi-orange);
+}
+
+.provision-workbench .toolbar {
+  justify-content: flex-start;
+}
+
+#provisionTable {
+  min-width: 980px;
+}
+
+#provisionTable th,
+#provisionTable td {
+  white-space: nowrap;
+}
+
+#provisionTable th:nth-child(1),
+#provisionTable td:nth-child(1) {
+  width: 92px;
+}
+
+#provisionTable th:nth-child(2),
+#provisionTable td:nth-child(2) {
+  width: 110px;
+}
+
+#provisionTable th:nth-child(3),
+#provisionTable td:nth-child(3) {
+  width: 130px;
+}
+
+.fx-input {
+  width: 104px;
+  min-height: 34px;
+  border: 1px solid var(--rappi-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--rappi-text);
+  padding: 0 10px;
+  font-family: "DM Mono", Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.fx-input:focus {
+  border-color: var(--rappi-orange);
+  box-shadow: 0 0 0 3px rgba(255, 68, 26, 0.14);
+  outline: none;
+}
+
+.provision-page .table-wrap {
+  min-height: 360px;
+}
+
+@media (max-width: 1180px) {
+  .main-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-top: 4px;
+  }
+
+  .has-main-nav .hero-copy {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .has-main-nav .hero-copy {
+    flex-direction: row;
+  }
+
+  .has-main-nav .rappi-logo img {
+    width: 116px;
+  }
+
+  .main-nav {
+    gap: 18px;
+  }
+}
+
 .nd-row-created td {
   color: var(--rappi-soft-text);
 }

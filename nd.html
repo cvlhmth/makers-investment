@@ -11,11 +11,17 @@
   </head>
   <body>
     <div class="app-shell nd-page">
-      <header class="report-hero">
+      <header class="report-hero has-main-nav">
         <div class="hero-copy">
           <a class="rappi-logo" href="./index.html" aria-label="Rappi">
             <img src="./rappi-logo.png" alt="Rappi" />
           </a>
+
+          <nav class="main-nav" aria-label="Navegação principal">
+            <a href="./index.html">Makers</a>
+            <a href="./provisao.html">Provisão</a>
+            <a class="is-active" href="./nd.html">ND</a>
+          </nav>
 
           <span class="hero-divider" aria-hidden="true"></span>
 
@@ -33,12 +39,6 @@
           </div>
 
           <div class="topbar-actions">
-            <a class="ghost-button nav-link-button" href="./index.html" title="Voltar ao dashboard">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M10.8 5.4 12.2 6.8 8 11h11v2H8l4.2 4.2-1.4 1.4L4.2 12l6.6-6.6Z" />
-              </svg>
-              Dashboard
-            </a>
             <button class="icon-button" id="ndRefreshButton" type="button" title="Atualizar dados" aria-label="Atualizar dados">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z" />
