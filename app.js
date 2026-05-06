@@ -176,6 +176,8 @@ const STATUS_OPTIONS = [
   "In Progress"
 ];
 
+const STATUS_FPA_OPTIONS = ["Done", "In Progress", "Pending"];
+
 const STATUS_CATMAN_OPTIONS = [
   "",
   "Validado",
@@ -907,7 +909,7 @@ function applyFiltersAndRender() {
     if (state.filters.month && String(row[monthKey] || "") !== state.filters.month) return false;
     if (state.filters.year && String(row[yearKey] || "") !== state.filters.year) return false;
     if (state.filters.catman && String(row[catmanKey] || "") !== state.filters.catman) return false;
-    if (state.filters.status && String(row[statusFpaKey] || "") !== state.filters.status) return false;
+    if (state.filters.status && normalizeStatusFpaValue(row[statusFpaKey]) !== state.filters.status) return false;
 
     if (state.filters.quick) {
       const statusValue = getQuickStatusBucket(row[statusFpaKey]);
@@ -945,7 +947,7 @@ function syncFilterOptions() {
   fillSelect(els.monthFilter, "Todos", uniqueSorted(state.rows.map((row) => row[monthKey]).filter(Boolean)));
   fillSelect(els.yearFilter, "Todos", uniqueSorted(state.rows.map((row) => row[yearKey]).filter(Boolean)));
   fillSelect(els.catmanFilter, "Todos", getCatmanOptions(), toTitleCase);
-  fillSelect(els.statusFilter, "All", state.lookupOptions.statusFpa, toDisplayCase);
+  fillSelect(els.statusFilter, "All", STATUS_FPA_OPTIONS, toDisplayCase);
 }
 
 function fillSelect(select, firstLabel, values, labelFormatter = (value) => value) {
@@ -972,7 +974,7 @@ function getStatusOptions(column, currentValue = "") {
   if (normalized === "status catman") {
     return STATUS_CATMAN_OPTIONS;
   } else if (normalized.includes("status fp&a") || normalized.includes("status fpna")) {
-    lookupOptions = state.lookupOptions.statusFpa;
+    return STATUS_FPA_OPTIONS;
   }
 
   const fallbackOptions = lookupOptions.length ? [] : STATUS_OPTIONS;
@@ -1118,9 +1120,14 @@ function renderEditableCell(row, column) {
   if (normalized.includes("status")) {
     const select = document.createElement("select");
     select.className = "status-select";
-    const selectValue = normalized === "status catman" ? normalizeCatmanStatusValue(value) : value;
+    const isStatusFpa = normalized.includes("status fp&a") || normalized.includes("status fpna");
+    const selectValue = normalized === "status catman"
+      ? normalizeCatmanStatusValue(value)
+      : isStatusFpa
+        ? normalizeStatusFpaValue(value)
+        : value;
     getStatusOptions(column, selectValue).forEach((optionValue) => select.append(new Option(toDisplayCase(optionValue) || "-", optionValue)));
-    if (normalized !== "status catman" && ![...select.options].some((option) => option.value === selectValue)) {
+    if (normalized !== "status catman" && !isStatusFpa && ![...select.options].some((option) => option.value === selectValue)) {
       select.append(new Option(toDisplayCase(value), value));
     }
     select.value = selectValue;
@@ -1632,6 +1639,25 @@ function normalizeCatmanStatusValue(value) {
   }
 
   return "";
+}
+
+function normalizeStatusFpaValue(value) {
+  const normalized = normalizeHeader(value);
+  if (!normalized) return "";
+
+  if (["done", "pago", "paid", "concluido", "finalizado", "aprovado"].includes(normalized)) {
+    return "Done";
+  }
+
+  if (["in progress", "em andamento", "em progresso"].includes(normalized)) {
+    return "In Progress";
+  }
+
+  if (["pending", "pendente", "aguardando", "validar", "em analise"].includes(normalized)) {
+    return "Pending";
+  }
+
+  return "Pending";
 }
 
 function normalizeHeader(value) {
