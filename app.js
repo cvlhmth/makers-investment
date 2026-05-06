@@ -1222,16 +1222,27 @@ function setWriteStatus(message, status) {
 function renderMetrics() {
   const queryKey = findColumnKey(["valor emissao nd", "valor_emissao_nd", "valor emissão nd"]) || findColumnKey(["valor query", "vlr query"]);
   const executionKey = findColumnKey(["valor_pagamento", "valor pagamento", "valor pgto"]) || findColumnKey(["execucao", "execução"]);
+  const metricRows = getMetricRows();
 
-  const totalQuery = sumByKey(state.filteredRows, queryKey);
-  const totalExecution = sumByKey(state.filteredRows, executionKey);
+  const totalQuery = sumByKey(metricRows, queryKey);
+  const totalExecution = sumByKey(metricRows, executionKey);
   const totalDiff = totalQuery - totalExecution;
 
-  els.metricRows.textContent = String(state.filteredRows.length);
+  els.metricRows.textContent = String(metricRows.length);
   els.metricQuery.textContent = formatCurrency(totalQuery);
   els.metricExecution.textContent = formatCurrency(totalExecution);
   els.metricDiff.textContent = formatCurrency(totalDiff);
   els.metricDiff.style.color = totalDiff < 0 ? "var(--danger)" : "var(--success)";
+}
+
+function getMetricRows() {
+  const statusFpaKey = findStatusFpaKey();
+
+  if (!state.filters.quick || !statusFpaKey) {
+    return state.filteredRows;
+  }
+
+  return state.filteredRows.filter((row) => getQuickStatusBucket(row[statusFpaKey]) === state.filters.quick);
 }
 
 function getQuickStatusBucket(value) {
