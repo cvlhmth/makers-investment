@@ -190,9 +190,6 @@ const EDITABLE_TEXT_COLUMNS = [
   "valor_emissao_nd",
   "obs",
   "observacao",
-  "emissao",
-  "data emissao",
-  "data_emissao",
   "data_envio",
   "envio",
   "previsao pgt",
@@ -866,7 +863,9 @@ function inferType(label) {
 
 function inferEditable(label) {
   const normalized = normalizeHeader(label);
-  if (normalized === "link_nd" || normalized === "link nd") return false;
+  if (["link_nd", "link nd", "status_nd", "status nd", "data_emissao", "data emissao", "emissao"].includes(normalized)) {
+    return false;
+  }
   return normalized.includes("status") || normalized.includes("link") || EDITABLE_TEXT_COLUMNS.includes(normalized);
 }
 
