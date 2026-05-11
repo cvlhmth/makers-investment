@@ -184,10 +184,25 @@ const STATUS_CATMAN_OPTIONS = [
   "Aguardando Valida\u00e7\u00e3o"
 ];
 
+const PAYMENT_METHOD_OPTIONS = [
+  "",
+  "Abatimento cr\u00e9dito",
+  "Bonifica\u00e7\u00e3o",
+  "Dep\u00f3sito",
+  "Desconto em nota",
+  "Preju\u00edzo",
+  "S/ execu\u00e7\u00e3o"
+];
+
 const EDITABLE_TEXT_COLUMNS = [
   "valor final",
   "valor emissao nd",
   "valor_emissao_nd",
+  "valor pagamento",
+  "valor_pagamento",
+  "valor pgto",
+  "forma de pagamento",
+  "forma_pagamento",
   "obs",
   "observacao",
   "data_envio",
@@ -815,6 +830,7 @@ function getColumnDisplayLabel(label) {
   if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o";
   if (normalized === "execucao") return "Pagamento";
   if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
+  if (normalized === "forma_pagamento" || normalized === "forma de pagamento") return "Forma de Pagamento";
   return label;
 }
 
@@ -833,7 +849,7 @@ function inferGroup(label, index) {
     return "validacao";
   }
 
-  if (["emissao", "data emissao", "data_emissao", "data_envio", "envio", "previsao pgt", "previsao_pgto", "previsao pagamento", "link", "link_nd"].includes(normalized)) {
+  if (["emissao", "data emissao", "data_emissao", "data_envio", "envio", "previsao pgt", "previsao_pgto", "previsao pagamento", "link", "link_nd", "forma_pagamento", "forma de pagamento"].includes(normalized)) {
     return "debito";
   }
 
@@ -1105,6 +1121,15 @@ function renderReadonlyCell(row, column) {
 function renderEditableCell(row, column) {
   const normalized = normalizeHeader(column.label);
   const value = row[column.key] ?? "";
+
+  if (normalized === "forma_pagamento" || normalized === "forma de pagamento") {
+    const select = document.createElement("select");
+    select.className = "status-select";
+    PAYMENT_METHOD_OPTIONS.forEach((optionValue) => select.append(new Option(toDisplayCase(optionValue) || "-", optionValue)));
+    select.value = normalizePaymentMethodValue(value);
+    select.addEventListener("change", () => updateLocalEdit(row, column, select.value));
+    return select;
+  }
 
   if (normalized === "catman") {
     const select = document.createElement("select");
@@ -1657,6 +1682,14 @@ function normalizeStatusFpaValue(value) {
   }
 
   return "Pending";
+}
+
+function normalizePaymentMethodValue(value) {
+  const normalized = normalizeHeader(value);
+  if (!normalized) return "";
+
+  const match = PAYMENT_METHOD_OPTIONS.find((option) => normalizeHeader(option) === normalized);
+  return match || "";
 }
 
 function normalizeHeader(value) {

@@ -22,6 +22,10 @@ const MAKER_WRITE_CONFIG = {
     "VALOR EMISSAO ND",
     "VALOR_EMISSAO_ND",
     "VALOR EMISS\u00c3O ND",
+    "VALOR PAGAMENTO",
+    "VALOR_PAGAMENTO",
+    "FORMA DE PAGAMENTO",
+    "FORMA_PAGAMENTO",
     "EMISS\u00c3O",
     "ENVIO",
     "PREVIS\u00c3O PGT",
@@ -32,6 +36,17 @@ const MAKER_WRITE_CONFIG = {
     "COMPROVANTE LINK"
   ]
 };
+
+const MAKER_STATUS_FPA_OPTIONS = ["Done", "In Progress", "Pending"];
+const MAKER_STATUS_CATMAN_OPTIONS = ["Validado", "Aguardando Valida\u00e7\u00e3o"];
+const MAKER_PAYMENT_METHOD_OPTIONS = [
+  "Abatimento cr\u00e9dito",
+  "Bonifica\u00e7\u00e3o",
+  "Dep\u00f3sito",
+  "Desconto em nota",
+  "Preju\u00edzo",
+  "S/ execu\u00e7\u00e3o"
+];
 
 function doGet(e) {
   if (typeof ndWebDoGet === "function") return ndWebDoGet(e);
@@ -87,11 +102,284 @@ function makerUpdateCell_(payload) {
   for (let row = headerRow + 1; row < values.length; row += 1) {
     if (String(values[row][idCol]).trim() === idAlianca) {
       sheet.getRange(row + 1, targetCol + 1).setValue(value);
-      return makerJson_({ ok: true, row: row + 1, column: targetCol + 1 });
+      const statusCatman = makerSyncStatusCatman_(sheet, row + 1, headers, columnName);
+      const paymentMethod = makerSyncPaymentMethod_(sheet, row + 1, headers, columnName);
+      const statusFpa = makerSyncStatusFpa_(sheet, row + 1, headers);
+      return makerJson_({ ok: true, row: row + 1, column: targetCol + 1, statusCatman, paymentMethod, statusFpa });
     }
   }
 
   return makerJson_({ ok: false, error: "idAlianca not found" });
+}
+
+function makerSyncStatusCatman_(sheet, rowNumber, headers, changedColumnName) {
+  if (makerNormalizeHeader_(changedColumnName) !== "status catman") return "";
+
+  const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN", "STATUS_CATMAN"]);
+  if (statusCatmanCol < 0) return "";
+
+  const statusCell = sheet.getRange(rowNumber, statusCatmanCol + 1);
+  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+
+  if (!String(columnCValue || "").trim()) {
+    statusCell.clearContent();
+    statusCell.clearDataValidations();
+    return "";
+  }
+
+  const nextStatus = makerNormalizeStatusCatmanValue_(statusCell.getDisplayValue()) || "Aguardando Valida\u00e7\u00e3o";
+  makerApplyStatusCatmanDropdown_(statusCell);
+  statusCell.setValue(nextStatus);
+  return nextStatus;
+}
+
+function makerSyncPaymentMethod_(sheet, rowNumber, headers, changedColumnName) {
+  const changedColumn = makerNormalizeHeader_(changedColumnName);
+  if (changedColumn !== "forma de pagamento" && changedColumn !== "forma_pagamento") return "";
+
+  const paymentMethodCol = makerFindColumnByCandidates_(headers, ["FORMA DE PAGAMENTO", "FORMA_PAGAMENTO"]);
+  if (paymentMethodCol < 0) return "";
+
+  const paymentCell = sheet.getRange(rowNumber, paymentMethodCol + 1);
+  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+
+  if (!makerHasColumnCValue_(columnCValue)) {
+    paymentCell.clearContent();
+    paymentCell.clearDataValidations();
+    return "";
+  }
+
+  const nextMethod = makerNormalizePaymentMethodValue_(paymentCell.getDisplayValue());
+  makerApplyPaymentMethodDropdown_(paymentCell);
+  paymentCell.setValue(nextMethod);
+  return nextMethod;
+}
+
+function makerSyncStatusFpa_(sheet, rowNumber, headers) {
+  const statusFpaCol = makerFindColumnByCandidates_(headers, ["STATUS FP&A", "STATUS FPA", "STATUS FPNA"]);
+  const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN"]);
+  const valorPagamentoCol = makerFindColumnByCandidates_(headers, ["VALOR_PAGAMENTO", "VALOR PAGAMENTO", "PAGAMENTO"]);
+
+  if (statusFpaCol < 0) return "";
+
+  const statusCell = sheet.getRange(rowNumber, statusFpaCol + 1);
+  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+
+  if (!makerHasColumnCValue_(columnCValue)) {
+    statusCell.clearContent();
+    statusCell.clearDataValidations();
+    return "";
+  }
+
+  makerApplyStatusFpaDropdown_(statusCell);
+  const statusCatman = statusCatmanCol >= 0
+    ? sheet.getRange(rowNumber, statusCatmanCol + 1).getDisplayValue()
+    : "";
+  const valorPagamento = valorPagamentoCol >= 0
+    ? sheet.getRange(rowNumber, valorPagamentoCol + 1).getDisplayValue()
+    : "";
+  const nextStatus = makerGetStatusFpaByRule_(valorPagamento, statusCatman);
+  if (!nextStatus) return "";
+
+  statusCell.setValue(nextStatus);
+  return nextStatus;
+}
+
+function makerGetStatusFpaByRule_(valorPagamento, statusCatman) {
+  const catman = makerNormalizeHeader_(statusCatman);
+  const hasPayment = makerHasPaymentValue_(valorPagamento);
+  const isValidado = catman === "validado" || catman === "valido";
+
+  if (isValidado && hasPayment) return "Done";
+  if (isValidado && !hasPayment) return "In Progress";
+  if (catman === "aguardando validacao" && !hasPayment) return "Pending";
+  return "Pending";
+}
+
+function makerApplyStatusCatmanDropdown_(range) {
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(MAKER_STATUS_CATMAN_OPTIONS, true)
+    .setAllowInvalid(false)
+    .build();
+  range.setDataValidation(rule);
+}
+
+function makerApplyStatusFpaDropdown_(range) {
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(MAKER_STATUS_FPA_OPTIONS, true)
+    .setAllowInvalid(false)
+    .build();
+  range.setDataValidation(rule);
+}
+
+function makerApplyPaymentMethodDropdown_(range) {
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(MAKER_PAYMENT_METHOD_OPTIONS, true)
+    .setAllowInvalid(false)
+    .build();
+  range.setDataValidation(rule);
+}
+
+function aplicarDropdownStatusCatmanMaker() {
+  const sheet = makerGetSheet_();
+  const values = sheet.getDataRange().getDisplayValues();
+  const headerRow = makerFindHeaderRow_(values);
+  const headers = values[headerRow];
+  const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN", "STATUS_CATMAN"]);
+
+  if (statusCatmanCol < 0) throw new Error("Coluna STATUS CATMAN nao encontrada.");
+
+  const firstDataRow = headerRow + 2;
+  const totalRows = sheet.getLastRow() - firstDataRow + 1;
+  if (totalRows <= 0) return;
+
+  const bodyRows = values.slice(headerRow + 1);
+  const statusRange = sheet.getRange(firstDataRow, statusCatmanCol + 1, totalRows, 1);
+  const statusRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(MAKER_STATUS_CATMAN_OPTIONS, true)
+    .setAllowInvalid(false)
+    .build();
+  const output = [];
+  const validations = [];
+
+  bodyRows.forEach((row) => {
+    const columnCValue = row[2] || "";
+
+    if (!String(columnCValue || "").trim()) {
+      output.push([""]);
+      validations.push([null]);
+      return;
+    }
+
+    output.push([makerNormalizeStatusCatmanValue_(row[statusCatmanCol]) || "Aguardando Valida\u00e7\u00e3o"]);
+    validations.push([statusRule]);
+  });
+
+  statusRange.setDataValidations(validations);
+  statusRange.setValues(output);
+}
+
+function aplicarDropdownStatusFpaMaker() {
+  const sheet = makerGetSheet_();
+  const values = sheet.getDataRange().getDisplayValues();
+  const headerRow = makerFindHeaderRow_(values);
+  const headers = values[headerRow];
+  const statusFpaCol = makerFindColumnByCandidates_(headers, ["STATUS FP&A", "STATUS FPA", "STATUS FPNA"]);
+  const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN"]);
+  const valorPagamentoCol = makerFindColumnByCandidates_(headers, ["VALOR_PAGAMENTO", "VALOR PAGAMENTO", "PAGAMENTO"]);
+
+  if (statusFpaCol < 0) throw new Error("Coluna STATUS FP&A nao encontrada.");
+
+  const firstDataRow = headerRow + 2;
+  const totalRows = sheet.getLastRow() - firstDataRow + 1;
+  if (totalRows <= 0) return;
+
+  const bodyRows = values.slice(headerRow + 1);
+
+  bodyRows.forEach((row, index) => {
+    const rowNumber = firstDataRow + index;
+    const statusCell = sheet.getRange(rowNumber, statusFpaCol + 1);
+    const columnCValue = row[2] || "";
+
+    if (!makerHasColumnCValue_(columnCValue)) {
+      statusCell.clearContent();
+      statusCell.clearDataValidations();
+      return;
+    }
+
+    const statusCatman = statusCatmanCol >= 0
+      ? sheet.getRange(rowNumber, statusCatmanCol + 1).getDisplayValue()
+      : "";
+    const valorPagamento = valorPagamentoCol >= 0
+      ? sheet.getRange(rowNumber, valorPagamentoCol + 1).getDisplayValue()
+      : "";
+    const nextStatus = makerGetStatusFpaByRule_(valorPagamento, statusCatman);
+
+    makerApplyStatusFpaDropdown_(statusCell);
+    statusCell.setValue(nextStatus);
+  });
+}
+
+function aplicarDropdownFormaPagamentoMaker() {
+  const sheet = makerGetSheet_();
+  const values = sheet.getDataRange().getDisplayValues();
+  const headerRow = makerFindHeaderRow_(values);
+  const headers = values[headerRow];
+  const paymentMethodCol = makerFindColumnByCandidates_(headers, ["FORMA DE PAGAMENTO", "FORMA_PAGAMENTO"]);
+
+  if (paymentMethodCol < 0) throw new Error("Coluna Forma de Pagamento nao encontrada.");
+
+  const firstDataRow = headerRow + 2;
+  const totalRows = sheet.getLastRow() - firstDataRow + 1;
+  if (totalRows <= 0) return;
+
+  const bodyRows = values.slice(headerRow + 1);
+  const paymentRange = sheet.getRange(firstDataRow, paymentMethodCol + 1, totalRows, 1);
+  const paymentRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(MAKER_PAYMENT_METHOD_OPTIONS, true)
+    .setAllowInvalid(false)
+    .build();
+  const output = [];
+  const validations = [];
+
+  bodyRows.forEach((row) => {
+    const columnCValue = row[2] || "";
+
+    if (!makerHasColumnCValue_(columnCValue)) {
+      output.push([""]);
+      validations.push([null]);
+      return;
+    }
+
+    output.push([makerNormalizePaymentMethodValue_(row[paymentMethodCol])]);
+    validations.push([paymentRule]);
+  });
+
+  paymentRange.setDataValidations(validations);
+  paymentRange.setValues(output);
+}
+
+function makerNormalizeStatusCatmanValue_(value) {
+  const normalized = makerNormalizeHeader_(value);
+  if (!normalized) return "";
+
+  if (["approved", "aprovado", "valido", "validado"].includes(normalized)) {
+    return "Validado";
+  }
+
+  if (normalized.includes("aguardando") || ["pending", "pendente", "validar", "em analise"].includes(normalized)) {
+    return "Aguardando Valida\u00e7\u00e3o";
+  }
+
+  return "";
+}
+
+function makerNormalizePaymentMethodValue_(value) {
+  const normalized = makerNormalizeHeader_(value);
+  if (!normalized) return "";
+
+  const match = MAKER_PAYMENT_METHOD_OPTIONS.find((option) => makerNormalizeHeader_(option) === normalized);
+  return match || "";
+}
+
+function makerHasPaymentValue_(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+
+  const cleaned = text.replace(/[^\d,.-]/g, "");
+  if (!cleaned) return false;
+
+  const commaIndex = cleaned.lastIndexOf(",");
+  const dotIndex = cleaned.lastIndexOf(".");
+  const number = commaIndex > dotIndex
+    ? Number(cleaned.replace(/\./g, "").replace(",", "."))
+    : Number(cleaned.replace(/,/g, ""));
+
+  return Number.isFinite(number) && number !== 0;
+}
+
+function makerHasColumnCValue_(value) {
+  return Boolean(String(value || "").trim());
 }
 
 function makerGetSheet_() {
@@ -129,6 +417,11 @@ function makerFindHeaderRow_(values) {
 function makerFindColumn_(headers, name) {
   const target = makerNormalizeHeader_(name);
   return headers.findIndex((header) => makerNormalizeHeader_(header) === target);
+}
+
+function makerFindColumnByCandidates_(headers, candidates) {
+  const normalizedCandidates = candidates.map(makerNormalizeHeader_);
+  return headers.findIndex((header) => normalizedCandidates.includes(makerNormalizeHeader_(header)));
 }
 
 function makerNormalizeHeader_(value) {
