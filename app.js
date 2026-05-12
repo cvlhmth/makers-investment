@@ -177,6 +177,7 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_FPA_OPTIONS = ["Done", "In Progress", "Pending"];
+const STATUS_ND_OPTIONS = ["Emitido", "Pending"];
 
 const STATUS_CATMAN_OPTIONS = [
   "",
@@ -244,6 +245,7 @@ const state = {
     year: "",
     catman: "",
     status: "",
+    statusNd: "",
     quick: ""
   },
   sort: {
@@ -280,6 +282,7 @@ const els = {
   yearFilter: document.querySelector("#yearFilter"),
   catmanFilter: document.querySelector("#catmanFilter"),
   statusFilter: document.querySelector("#statusFilter"),
+  statusNdFilter: document.querySelector("#statusNdFilter"),
   clearFiltersButton: document.querySelector("#clearFiltersButton"),
   tableHead: document.querySelector("#tableHead"),
   tableBody: document.querySelector("#tableBody"),
@@ -436,14 +439,20 @@ function bindEvents() {
     applyFiltersAndRender();
   });
 
+  els.statusNdFilter.addEventListener("change", () => {
+    state.filters.statusNd = els.statusNdFilter.value;
+    applyFiltersAndRender();
+  });
+
   els.clearFiltersButton.addEventListener("click", () => {
-    state.filters = { search: "", maker: "", month: "", year: "", catman: "", status: "", quick: "" };
+    state.filters = { search: "", maker: "", month: "", year: "", catman: "", status: "", statusNd: "", quick: "" };
     els.searchInput.value = "";
     els.makerFilter.value = "";
     els.monthFilter.value = "";
     els.yearFilter.value = "";
     els.catmanFilter.value = "";
     els.statusFilter.value = "";
+    els.statusNdFilter.value = "";
     els.quickTabs.forEach((tab) => tab.classList.toggle("is-active", !tab.dataset.quickFilter));
     applyFiltersAndRender();
   });
@@ -913,6 +922,7 @@ function applyFiltersAndRender() {
   const catmanKey = findCatmanKey();
   const monthKey = findColumnKey(["mes", "mês"]);
   const statusFpaKey = findStatusFpaKey();
+  const statusNdKey = findStatusNdKey();
 
   let rows = state.rows.filter((row) => {
     if (state.filters.search) {
@@ -925,6 +935,7 @@ function applyFiltersAndRender() {
     if (state.filters.year && String(row[yearKey] || "") !== state.filters.year) return false;
     if (state.filters.catman && String(row[catmanKey] || "") !== state.filters.catman) return false;
     if (state.filters.status && normalizeStatusFpaValue(row[statusFpaKey]) !== state.filters.status) return false;
+    if (state.filters.statusNd && normalizeStatusNdValue(row[statusNdKey]) !== state.filters.statusNd) return false;
 
     if (state.filters.quick) {
       const statusValue = getQuickStatusBucket(row[statusFpaKey]);
@@ -963,6 +974,7 @@ function syncFilterOptions() {
   fillSelect(els.yearFilter, "Todos", uniqueSorted(state.rows.map((row) => row[yearKey]).filter(Boolean)));
   fillSelect(els.catmanFilter, "Todos", getCatmanOptions(), toTitleCase);
   fillSelect(els.statusFilter, "All", STATUS_FPA_OPTIONS, toDisplayCase);
+  fillSelect(els.statusNdFilter, "All", STATUS_ND_OPTIONS, toDisplayCase);
 }
 
 function fillSelect(select, firstLabel, values, labelFormatter = (value) => value) {
@@ -1582,6 +1594,21 @@ function findStatusFpaKey() {
   return partial?.key || "";
 }
 
+function findStatusNdKey() {
+  const exact = state.columns.find((column) => {
+    const normalized = normalizeHeader(column.label);
+    return normalized === "status_nd" || normalized === "status nd";
+  });
+  if (exact) return exact.key;
+
+  const partial = state.columns.find((column) => {
+    const normalized = normalizeHeader(column.label);
+    return normalized.includes("status") && normalized.includes("nd");
+  });
+
+  return partial?.key || "";
+}
+
 function sumByKey(rows, key) {
   if (!key) return 0;
   return rows.reduce((total, row) => total + parseFlexibleNumber(row[key]), 0);
@@ -1678,6 +1705,21 @@ function normalizeStatusFpaValue(value) {
   }
 
   if (["pending", "pendente", "aguardando", "validar", "em analise"].includes(normalized)) {
+    return "Pending";
+  }
+
+  return "Pending";
+}
+
+function normalizeStatusNdValue(value) {
+  const normalized = normalizeHeader(value);
+  if (!normalized) return "";
+
+  if (["emitido", "emitida", "gerado", "gerada", "issued"].includes(normalized)) {
+    return "Emitido";
+  }
+
+  if (["pending", "pendente", "aguardando", "em aberto"].includes(normalized)) {
     return "Pending";
   }
 
