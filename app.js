@@ -840,6 +840,7 @@ function getColumnDisplayLabel(label) {
   if (normalized === "execucao") return "Pagamento";
   if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
   if (normalized === "forma_pagamento" || normalized === "forma de pagamento") return "Forma de Pagamento";
+  if (normalized === "diff" || normalized === "dif") return "Cr\u00e9dito";
   return label;
 }
 
@@ -1269,7 +1270,7 @@ function renderMetrics() {
 
   const totalQuery = sumByKey(metricRows, queryKey);
   const totalExecution = sumByKey(metricRows, executionKey);
-  const totalDiff = totalQuery - totalExecution;
+  const totalDiff = totalExecution - totalQuery;
 
   els.metricRows.textContent = String(metricRows.length);
   els.metricQuery.textContent = formatCurrency(totalQuery);
