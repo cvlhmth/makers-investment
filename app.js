@@ -12,7 +12,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "maker-public-csv-v4";
+const CONFIG_VERSION = "maker-anchor-links-v5";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.configVersion",
