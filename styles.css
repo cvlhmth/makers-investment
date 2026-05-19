@@ -1666,6 +1666,41 @@ button:disabled,
   min-width: 1180px;
 }
 
+#cnpjTable {
+  min-width: 1480px;
+}
+
+#cnpjTable th:nth-child(1),
+#cnpjTable td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+  overflow: hidden;
+  background: var(--rappi-surface) !important;
+  box-shadow: 1px 0 0 var(--rappi-border);
+  text-overflow: ellipsis;
+  z-index: 6;
+}
+
+#cnpjTable th:nth-child(1) {
+  z-index: 8;
+}
+
+.cnpj-input {
+  min-width: 180px;
+}
+
+#cnpjTable td:nth-child(6) .cnpj-input {
+  min-width: 320px;
+}
+
+.compact-action {
+  min-height: 36px;
+  padding: 0 14px;
+}
+
 #ndTable th:nth-child(1),
 #ndTable td:nth-child(1) {
   position: sticky;

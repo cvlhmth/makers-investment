@@ -8,6 +8,7 @@
 const MAKER_WRITE_CONFIG = {
   SPREADSHEET_ID: "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44",
   SHEET_NAME: "Maker",
+  CATMAN_SHEET_NAME: "Catman",
   SECRET: "1234",
   ANCHOR_HEADER: "MAKER",
   ALLOWED_COLUMNS: [
@@ -66,10 +67,68 @@ function doPost(e) {
       return makerJson_({ ok: false, error: "Arquivo nd.gs nao carregado." });
     }
 
+    if (payload.action === "upsert_catman") {
+      return makerUpsertCatman_(payload);
+    }
+
     return makerUpdateCell_(payload);
   } catch (err) {
     return makerJson_({ ok: false, error: String(err && err.message ? err.message : err) });
   }
+}
+
+function makerUpsertCatman_(payload) {
+  if (String(payload.secret || "") !== String(makerGetSecret_())) {
+    return makerJson_({ ok: false, error: "unauthorized" });
+  }
+
+  const record = payload.record || {};
+  const maker = String(record.maker || "").trim();
+  if (!maker) return makerJson_({ ok: false, error: "missing maker" });
+
+  const spreadsheet = MAKER_WRITE_CONFIG.SPREADSHEET_ID
+    ? SpreadsheetApp.openById(MAKER_WRITE_CONFIG.SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
+
+  let sheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
+  if (!sheet) sheet = spreadsheet.insertSheet(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
+
+  const requiredHeaders = [
+    "CATMAN",
+    "ID_ALIANCA",
+    "MAKER",
+    "CNPJ",
+    "EMAIL FORNECEDOR",
+    "RAZAO SOCIAL",
+    "ENDERECO COMPLETO"
+  ];
+  const headerMap = makerEnsureCatmanHeaders_(sheet, requiredHeaders);
+  const values = sheet.getDataRange().getDisplayValues();
+  const makerCol = headerMap[makerNormalizeHeader_("MAKER")];
+  if (!makerCol) return makerJson_({ ok: false, error: "column MAKER not found" });
+
+  let targetRow = -1;
+  for (let row = 1; row < values.length; row += 1) {
+    if (makerNormalizeHeader_(values[row][makerCol - 1]) === makerNormalizeHeader_(maker)) {
+      targetRow = row + 1;
+      break;
+    }
+  }
+
+  if (targetRow < 0) {
+    targetRow = Math.max(sheet.getLastRow() + 1, 2);
+    sheet.getRange(targetRow, makerCol).setValue(maker);
+  }
+
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "CATMAN", record.catman);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "ID_ALIANCA", record.idAlianca);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "MAKER", maker);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "CNPJ", record.cnpj);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "EMAIL FORNECEDOR", record.emailFornecedor);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "RAZAO SOCIAL", record.razaoSocial);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "ENDERECO COMPLETO", record.enderecoCompleto);
+
+  return makerJson_({ ok: true, row: targetRow, maker });
 }
 
 function makerUpdateCell_(payload) {
@@ -192,7 +251,7 @@ function makerGetStatusFpaByRule_(valorPagamento, statusCatman) {
   const hasPayment = makerHasPaymentValue_(valorPagamento);
   const isValidado = catman === "validado" || catman === "valido";
 
-  if (isValidado && hasPayment) return "Done";
+  if (hasPayment) return "Done";
   if (isValidado && !hasPayment) return "In Progress";
   if (catman === "aguardando validacao" && !hasPayment) return "Pending";
   return "Pending";
@@ -394,6 +453,31 @@ function makerGetAnchorValue_(sheet, rowNumber, headers) {
   const anchorCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   if (anchorCol < 0) return "";
   return sheet.getRange(rowNumber, anchorCol + 1).getDisplayValue();
+}
+
+function makerEnsureCatmanHeaders_(sheet, requiredHeaders) {
+  if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
+    sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]).setFontWeight("bold");
+  }
+
+  let headers = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getDisplayValues()[0].map(String);
+  const normalizedHeaders = headers.map(makerNormalizeHeader_);
+  const missingHeaders = requiredHeaders.filter((header) => !normalizedHeaders.includes(makerNormalizeHeader_(header)));
+
+  if (missingHeaders.length) {
+    sheet.getRange(1, headers.length + 1, 1, missingHeaders.length).setValues([missingHeaders]).setFontWeight("bold");
+    headers = headers.concat(missingHeaders);
+  }
+
+  return headers.reduce((map, header, index) => {
+    if (makerNormalizeHeader_(header)) map[makerNormalizeHeader_(header)] = index + 1;
+    return map;
+  }, {});
+}
+
+function makerSetCatmanValue_(sheet, rowNumber, headerMap, header, value) {
+  const col = headerMap[makerNormalizeHeader_(header)];
+  if (col) sheet.getRange(rowNumber, col).setValue(value == null ? "" : value);
 }
 
 function makerGetSheet_() {

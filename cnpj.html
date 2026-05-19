@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Makers Investment | CNPJ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell cnpj-page">
+      <header class="report-hero has-main-nav">
+        <div class="hero-copy">
+          <a class="rappi-logo" href="./index.html" aria-label="Rappi">
+            <img src="./rappi-logo.png" alt="Rappi" />
+          </a>
+
+          <nav class="main-nav" aria-label="Navegação principal">
+            <a href="./index.html">Makers</a>
+            <a href="./provisao.html">Provisão</a>
+            <a href="./nd.html">ND</a>
+            <a class="is-active" href="./cnpj.html">CNPJ</a>
+          </nav>
+
+          <span class="hero-divider" aria-hidden="true"></span>
+
+          <div class="hero-title">
+            <h1>Makers Investment</h1>
+            <p class="hero-subtitle">Cadastro e manutenção de CNPJ na aba Catman</p>
+            <p class="hero-connection" id="cnpjConnectionStatus">Carregando bases</p>
+            <p class="hero-contact">Slack: @matheus.carvalho @rita.kamensky</p>
+          </div>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-status">
+            <span class="confidential-badge">CONFIDENCIAL - FP&amp;A</span>
+          </div>
+
+          <div class="topbar-actions">
+            <button class="icon-button" id="cnpjRefreshButton" type="button" title="Atualizar dados" aria-label="Atualizar dados">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="report-content">
+        <section class="quick-tabs" aria-label="Filtro de cadastro">
+          <button class="quick-tab is-active" type="button" data-cnpj-filter="missing">Sem CNPJ</button>
+          <button class="quick-tab" type="button" data-cnpj-filter="">Todos</button>
+        </section>
+
+        <section class="config-panel nd-config-panel is-open" aria-label="Configuração de escrita">
+          <div class="config-grid">
+            <label>
+              <span>Apps Script URL</span>
+              <input id="cnpjWriteEndpointInput" type="url" autocomplete="off" placeholder="https://script.google.com/.../exec" />
+            </label>
+            <label>
+              <span>Token de escrita</span>
+              <input id="cnpjWriteSecretInput" type="password" autocomplete="off" placeholder="Mesmo SECRET do Apps Script" />
+            </label>
+            <div class="config-actions">
+              <button class="primary-button" id="cnpjSaveConfigButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 3h12l2 2v16H5V3Zm2 2v14h10V7.8L14.2 5H7Zm2 0h4v5H9V5Zm0 9h6v2H9v-2Z" />
+                </svg>
+                Salvar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-heading">
+          <div>
+            <h2>Cadastro Catman</h2>
+            <p>Atualize CNPJ, Catman, e-mail, razão social e endereço usando Maker como chave.</p>
+          </div>
+          <span class="period-badge">Aba Catman</span>
+        </section>
+
+        <section class="metrics-grid" aria-label="Resumo de CNPJ">
+          <article class="metric">
+            <span>Makers</span>
+            <strong id="cnpjMetricTotal">0</strong>
+          </article>
+          <article class="metric">
+            <span>Sem CNPJ</span>
+            <strong id="cnpjMetricMissing">0</strong>
+          </article>
+          <article class="metric">
+            <span>Com CNPJ</span>
+            <strong id="cnpjMetricFilled">0</strong>
+          </article>
+          <article class="metric">
+            <span>Catman</span>
+            <strong id="cnpjMetricCatman">0</strong>
+          </article>
+        </section>
+
+        <section class="workbench cnpj-workbench">
+          <div class="toolbar">
+            <label class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.8 4a5.8 5.8 0 0 1 4.64 9.28l4.14 4.14-1.42 1.42-4.14-4.14A5.8 5.8 0 1 1 9.8 4Zm0 2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z" />
+              </svg>
+              <input id="cnpjSearchInput" type="search" placeholder="Buscar maker, CNPJ, catman..." />
+            </label>
+
+            <button class="ghost-button" id="cnpjClearFiltersButton" type="button">Limpar</button>
+          </div>
+
+          <div class="table-wrap cnpj-table-wrap">
+            <table id="cnpjTable">
+              <thead>
+                <tr>
+                  <th>Maker</th>
+                  <th>Catman</th>
+                  <th>CNPJ</th>
+                  <th>Email fornecedor</th>
+                  <th>Razão social</th>
+                  <th>Endereço completo</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="cnpjTableBody"></tbody>
+            </table>
+            <div class="empty-state" id="cnpjEmptyState" hidden>
+              <strong>Nenhum maker encontrado</strong>
+              <span>Revise os filtros ou atualize as bases.</span>
+            </div>
+          </div>
+
+          <footer class="table-footer">
+            <span id="cnpjRowCount">0 linhas</span>
+            <span id="cnpjWriteStatus">Escrita não configurada</span>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script src="./cnpj.js?v=20260519-cnpj-v1"></script>
+  </body>
+</html>

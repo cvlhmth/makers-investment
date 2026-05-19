@@ -62,7 +62,7 @@ function calcularStatusFpa_(valorPagamento, statusCatman) {
   const hasPayment = temValorPagamento_(valorPagamento);
   const isValidado = catman === "validado" || catman === "valido";
 
-  if (isValidado && hasPayment) return "Done";
+  if (hasPayment) return "Done";
   if (isValidado && !hasPayment) return "In Progress";
   if (catman === "aguardando validacao" && !hasPayment) return "Pending";
   return "Pending";
