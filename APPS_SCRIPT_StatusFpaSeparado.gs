@@ -9,7 +9,7 @@
 
 const STATUS_FPA_CONFIG = {
   SHEET_NAME: "Maker",
-  HEADER_ID: "ID_ALIANCA"
+  HEADER_ID: "MAKER"
 };
 
 const STATUS_FPA_OPTIONS = ["Done", "In Progress", "Pending"];
@@ -21,12 +21,14 @@ function atualizarStatusFpaPorPagamento() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoStatusFpa_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaStatusFpa_(headers, ["MAKER"]);
   const statusFpaCol = encontrarColunaStatusFpa_(headers, ["STATUS FP&A", "STATUS FPA", "STATUS FPNA"]);
   const statusCatmanCol = encontrarColunaStatusFpa_(headers, ["STATUS CATMAN"]);
   const valorPagamentoCol = encontrarColunaStatusFpa_(headers, ["VALOR_PAGAMENTO", "VALOR PAGAMENTO", "PAGAMENTO"]);
   const firstDataRow = headerRow + 2;
   const lastRow = sheet.getLastRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusFpaCol < 0) throw new Error("Coluna STATUS FP&A nao encontrada.");
   if (statusCatmanCol < 0) throw new Error("Coluna STATUS CATMAN nao encontrada.");
   if (valorPagamentoCol < 0) throw new Error("Coluna VALOR_PAGAMENTO nao encontrada.");
@@ -35,10 +37,10 @@ function atualizarStatusFpaPorPagamento() {
   const bodyRows = values.slice(headerRow + 1);
 
   bodyRows.forEach((row, index) => {
-    const valorColunaC = row[2] || "";
+    const valorMaker = row[makerCol] || "";
     const statusCell = sheet.getRange(firstDataRow + index, statusFpaCol + 1);
 
-    if (!temValorNaColunaCStatusFpa_(valorColunaC)) {
+    if (!temValorNaColunaCStatusFpa_(valorMaker)) {
       statusCell.clearContent();
       statusCell.clearDataValidations();
       return;

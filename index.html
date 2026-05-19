@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=20260506-makers-table-fix" />
+    <link rel="stylesheet" href="./styles.css?v=20260519-maker-anchor-links" />
   </head>
   <body>
     <div class="app-shell">
@@ -49,6 +49,7 @@
                 <path d="M12 3v10.2l3.6-3.6L17 11l-6 6-6-6 1.4-1.4 3.6 3.6V3h2ZM5 19h14v2H5v-2Z" />
               </svg>
             </button>
+            <button class="ghost-button" id="linksToggle" type="button">Links</button>
             <button class="primary-button" id="authButton" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M21.6 12.23c0-.74-.07-1.45-.19-2.14H12v4.05h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.31 2.98-7.44Z" />
@@ -115,6 +116,17 @@
               </button>
             </div>
           </div>
+        </section>
+
+        <section class="links-panel" id="linksPanel" aria-label="Links úteis" hidden>
+          <div class="links-panel-header">
+            <div>
+              <h2>Links úteis</h2>
+              <p>Atalhos cadastrados na aba Links da planilha.</p>
+            </div>
+            <span id="linksStatus">Carregando...</span>
+          </div>
+          <div class="links-list" id="linksList"></div>
         </section>
 
         <section class="section-heading">
@@ -212,6 +224,6 @@
       </main>
     </div>
 
-    <script src="./app.js?v=20260514-credit-metric"></script>
+    <script src="./app.js?v=20260519-maker-anchor-links"></script>
   </body>
 </html>

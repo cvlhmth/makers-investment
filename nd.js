@@ -178,7 +178,7 @@ function buildNdRecords(rows) {
       "valor extenso"
     ]);
     const valueNumber = parseFlexibleNumber(valorValidado);
-    const sourceKeys = makeRecordKeys({ idAlianca, maker, year, month, valorValidado });
+    const sourceKeys = makeRecordKeys({ maker, year, month, valorValidado });
     const alreadyCreated = sourceKeys.some((key) => ndState.historyKeys.has(key));
     const eligible = isApprovedCatman(statusCatman);
     const missing = [];
@@ -363,7 +363,6 @@ async function createNds() {
 
   const rows = readyRecords.map((record) => ({
     nNd: record.nNd,
-    idAlianca: record.idAlianca,
     maker: record.maker,
     ano: record.year,
     mes: record.month,
@@ -398,7 +397,7 @@ async function createNds() {
 }
 
 function exportReadyNdCsv() {
-  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR EMISSAO ND", "VALOR FINAL EXTENSO", "STATUS CATMAN", "ID_ALIANCA", "CNPJ"]];
+  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR EMISSAO ND", "VALOR FINAL EXTENSO", "STATUS CATMAN", "CNPJ"]];
 
   ndState.records
     .filter((record) => record.status === ND_STATUS.ready)
@@ -411,7 +410,6 @@ function exportReadyNdCsv() {
         record.valorValidado,
         record.valorFinalExtenso,
         displayCatmanStatus(record.statusCatman),
-        record.idAlianca,
         record.cnpj
       ]);
     });
@@ -529,7 +527,6 @@ function buildHistoryKeys(rows) {
 
   rows.forEach((row) => {
     makeRecordKeys({
-      idAlianca: getRowValue(row, ["id_alianca", "id alianca", "id alianza"]),
       maker: getRowValue(row, ["maker"]),
       year: getFirstFilledValue(row, ["ano", "year"]),
       month: getFirstFilledValue(row, ["mes", "mês", "month"]),
@@ -545,17 +542,12 @@ function buildHistoryKeys(rows) {
   return keys;
 }
 
-function makeRecordKeys({ idAlianca, maker, year, month, valorValidado }) {
+function makeRecordKeys({ maker, year, month, valorValidado }) {
   const keys = [];
-  const normalizedId = String(idAlianca || "").trim();
   const normalizedMaker = normalizeHeader(maker);
   const normalizedYear = String(year || "").trim();
   const normalizedMonth = String(month || "").trim();
   const normalizedValue = parseFlexibleNumber(valorValidado).toFixed(2);
-
-  if (normalizedId && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
-    keys.push(`id-year-month-value:${normalizedId}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);
-  }
 
   if (normalizedMaker && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
     keys.push(`maker-year-month-value:${normalizedMaker}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);

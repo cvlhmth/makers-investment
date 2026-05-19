@@ -1571,6 +1571,66 @@ a.primary-button {
   box-shadow: none;
 }
 
+.links-panel {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--rappi-border);
+  border-radius: 18px;
+  background: var(--rappi-surface);
+  box-shadow: var(--rappi-shadow-sm);
+}
+
+.links-panel[hidden] {
+  display: none;
+}
+
+.links-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.links-panel-header h2 {
+  margin: 0;
+  color: var(--rappi-text);
+  font-size: 18px;
+}
+
+.links-panel-header p,
+#linksStatus {
+  margin: 3px 0 0;
+  color: var(--rappi-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.useful-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--rappi-border);
+  border-radius: 999px;
+  background: var(--rappi-surface-2);
+  color: var(--rappi-text);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.useful-link:hover {
+  border-color: var(--rappi-orange);
+  color: var(--rappi-orange);
+}
+
 button:disabled,
 .primary-button:disabled {
   cursor: not-allowed;

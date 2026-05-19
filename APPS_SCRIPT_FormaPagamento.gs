@@ -20,7 +20,7 @@
 
 const FORMA_PAGAMENTO_CONFIG = {
   SHEET_NAME: "Maker",
-  HEADER_ID: "ID_ALIANCA",
+  HEADER_ID: "MAKER",
   PAYMENT_HEADER: "Forma de Pagamento"
 };
 
@@ -40,10 +40,12 @@ function atualizarFormaPagamentoDropdown() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoFormaPagamento_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaFormaPagamento_(headers, ["MAKER"]);
   const paymentCol = encontrarColunaFormaPagamento_(headers, [FORMA_PAGAMENTO_CONFIG.PAYMENT_HEADER, "FORMA_PAGAMENTO"]);
   const firstDataRow = headerRow + 2;
   const lastRow = sheet.getLastRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (paymentCol < 0) throw new Error("Coluna Forma de Pagamento nao encontrada.");
   if (lastRow < firstDataRow) return;
 
@@ -57,9 +59,9 @@ function atualizarFormaPagamentoDropdown() {
   const validations = [];
 
   bodyRows.forEach((row) => {
-    const valorColunaC = row[2] || "";
+    const valorMaker = row[makerCol] || "";
 
-    if (!temValorColunaCFormaPagamento_(valorColunaC)) {
+    if (!temValorColunaCFormaPagamento_(valorMaker)) {
       output.push([""]);
       validations.push([null]);
       return;
@@ -84,15 +86,17 @@ function formaPagamentoAoEditar(e) {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoFormaPagamento_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaFormaPagamento_(headers, ["MAKER"]);
   const paymentCol = encontrarColunaFormaPagamento_(headers, [FORMA_PAGAMENTO_CONFIG.PAYMENT_HEADER, "FORMA_PAGAMENTO"]);
   const rowNumber = range.getRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (paymentCol < 0) throw new Error("Coluna Forma de Pagamento nao encontrada.");
   if (rowNumber <= headerRow + 1) return;
-  if (![3, paymentCol + 1].includes(range.getColumn())) return;
+  if (![makerCol + 1, paymentCol + 1].includes(range.getColumn())) return;
 
   const paymentCell = sheet.getRange(rowNumber, paymentCol + 1);
-  const valorColunaC = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const valorColunaC = sheet.getRange(rowNumber, makerCol + 1).getDisplayValue();
 
   if (!temValorColunaCFormaPagamento_(valorColunaC)) {
     paymentCell.clearContent();

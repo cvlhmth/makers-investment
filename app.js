@@ -7,7 +7,8 @@ const GOOGLE_SHEET = {
   writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
   writeSecret: "",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
-  filtersSheetName: "filters"
+  filtersSheetName: "filters",
+  linksSheetName: "Links"
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
@@ -207,6 +208,8 @@ const EDITABLE_TEXT_COLUMNS = [
   "obs",
   "observacao",
   "data_envio",
+  "data pagamento",
+  "data_pagamento",
   "envio",
   "previsao pgt",
   "previsao_pgto",
@@ -237,6 +240,7 @@ const state = {
     statusCatman: [],
     statusFpa: []
   },
+  links: [],
   edits: {},
   filters: {
     search: "",
@@ -258,6 +262,10 @@ const els = {
   connectionStatus: document.querySelector("#connectionStatus"),
   refreshButton: document.querySelector("#refreshButton"),
   exportButton: document.querySelector("#exportButton"),
+  linksToggle: document.querySelector("#linksToggle"),
+  linksPanel: document.querySelector("#linksPanel"),
+  linksList: document.querySelector("#linksList"),
+  linksStatus: document.querySelector("#linksStatus"),
   configToggle: document.querySelector("#configToggle"),
   configPanel: document.querySelector("#configPanel"),
   sheetUrlInput: document.querySelector("#sheetUrlInput"),
@@ -340,6 +348,13 @@ function bindEvents() {
   els.configToggle.addEventListener("click", () => {
     els.configPanel.classList.toggle("is-open");
   });
+
+  if (els.linksToggle && els.linksPanel) {
+    els.linksToggle.addEventListener("click", () => {
+      els.linksPanel.hidden = !els.linksPanel.hidden;
+      els.linksToggle.classList.toggle("is-active", !els.linksPanel.hidden);
+    });
+  }
 
   els.refreshButton.addEventListener("click", () => {
     if (state.source && shouldUseOAuthForSource() && !state.accessToken && isHttpOrigin()) {
@@ -474,6 +489,7 @@ async function loadFromConfiguredSheet() {
     }
 
     await loadLookupOptions();
+    await loadLinksSheet();
     setDataset(payload.columns, payload.rows);
     const location = state.sheetName ? `aba ${state.sheetName}` : state.gid ? `gid ${state.gid}` : "aba principal";
     const auto = state.refreshMinutes > 0 ? `, auto ${state.refreshMinutes} min` : "";
@@ -542,6 +558,56 @@ async function loadLookupOptions() {
   } catch (error) {
     console.warn("Nao foi possivel carregar a aba filters.", error);
   }
+}
+
+async function loadLinksSheet() {
+  state.links = [];
+  renderLinks("Carregando links...");
+
+  if (!state.source) {
+    renderLinks("Configure a planilha para carregar links.");
+    return;
+  }
+
+  try {
+    const matrix = await loadSheetMatrix(state.source, "", GOOGLE_SHEET.linksSheetName || "Links");
+    const payload = matrixToObjects(matrix);
+    const topicColumn = findPayloadColumn(payload.columns, ["topic", "topico", "tópico"]);
+    const linkColumn = findPayloadColumn(payload.columns, ["link", "url"]);
+
+    if (!topicColumn || !linkColumn) {
+      throw new Error("A aba Links precisa ter as headers TOPIC e LINK.");
+    }
+
+    state.links = payload.rows
+      .map((row) => ({
+        topic: String(row[topicColumn] || "").trim(),
+        link: normalizeUrl(row[linkColumn])
+      }))
+      .filter((item) => item.topic && item.link);
+
+    renderLinks(state.links.length ? "" : "Nenhum link cadastrado.");
+  } catch (error) {
+    console.warn("Nao foi possivel carregar a aba Links.", error);
+    renderLinks("Links indisponíveis.");
+  }
+}
+
+function renderLinks(message = "") {
+  if (!els.linksList || !els.linksStatus) return;
+
+  els.linksList.innerHTML = "";
+  els.linksStatus.textContent = message || `${state.links.length} links`;
+
+  state.links.forEach((item) => {
+    const anchor = document.createElement("a");
+    anchor.className = "useful-link";
+    anchor.href = item.link;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.textContent = item.topic;
+    els.linksList.append(anchor);
+  });
 }
 
 async function loadSheetMatrix(input, gid, sheetName) {
@@ -796,6 +862,8 @@ function loadSampleData() {
   state.lookupOptions.catman = [];
   state.lookupOptions.statusCatman = [];
   state.lookupOptions.statusFpa = [];
+  state.links = [];
+  renderLinks("Links aparecem quando a aba Links carregar.");
   setDataset(SAMPLE_COLUMNS, SAMPLE_ROWS);
   setConnectionStatus("Usando base de exemplo");
 }
@@ -859,7 +927,7 @@ function inferGroup(label, index) {
     return "validacao";
   }
 
-  if (["emissao", "data emissao", "data_emissao", "data_envio", "envio", "previsao pgt", "previsao_pgto", "previsao pagamento", "link", "link_nd", "forma_pagamento", "forma de pagamento"].includes(normalized)) {
+  if (["emissao", "data emissao", "data_emissao", "data_envio", "data pagamento", "data_pagamento", "envio", "previsao pgt", "previsao_pgto", "previsao pagamento", "link", "link_nd", "forma_pagamento", "forma de pagamento"].includes(normalized)) {
     return "debito";
   }
 
@@ -882,7 +950,7 @@ function inferType(label) {
   if (normalized.includes("valor") || normalized.includes("execucao") || normalized.includes("query")) return "currency";
   if (normalized === "diff" || normalized === "dif") return "diff";
   if (normalized === "mes" || normalized === "ano") return "number";
-  if (normalized.includes("emissao") || normalized.includes("envio") || normalized.includes("previsao")) return "date";
+  if (normalized.includes("emissao") || normalized.includes("envio") || normalized.includes("previsao") || normalized === "data pagamento" || normalized === "data_pagamento") return "date";
 
   return "text";
 }
@@ -907,6 +975,8 @@ function inferAmber(label) {
     "data emissao",
     "data_emissao",
     "data_envio",
+    "data pagamento",
+    "data_pagamento",
     "envio",
     "previsao pgt",
     "previsao_pgto",
@@ -1207,16 +1277,19 @@ async function sendSheetUpdate(row, column, value) {
     return;
   }
 
+  const makerKey = findColumnKey(["maker"]);
   const idKey = findColumnKey(["id_alianca", "id alianca"]);
+  const maker = String(row[makerKey] || "").trim();
   const idAlianca = String(row[idKey] || "").trim();
 
-  if (!idAlianca) {
-    setWriteStatus("Edição local, ID_ALIANCA não encontrado", "error");
+  if (!maker) {
+    setWriteStatus("Edição local, Maker não encontrado", "error");
     return;
   }
 
   const payload = {
     secret: state.writeSecret,
+    maker,
     idAlianca,
     column: column.label,
     value

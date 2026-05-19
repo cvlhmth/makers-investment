@@ -9,13 +9,15 @@ const MAKER_WRITE_CONFIG = {
   SPREADSHEET_ID: "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44",
   SHEET_NAME: "Maker",
   SECRET: "1234",
-  ID_HEADER: "ID_ALIANCA",
+  ANCHOR_HEADER: "MAKER",
   ALLOWED_COLUMNS: [
     "STATUS CATMAN",
     "STATUS FP&A",
     "DATA_EMISSAO",
     "DATA EMISSAO",
     "DATA_ENVIO",
+    "DATA_PAGAMENTO",
+    "DATA PAGAMENTO",
     "PREVISAO_PGTO",
     "OBS",
     "VALOR FINAL",
@@ -75,12 +77,12 @@ function makerUpdateCell_(payload) {
     return makerJson_({ ok: false, error: "unauthorized" });
   }
 
-  const idAlianca = String(payload.idAlianca || "").trim();
+  const maker = String(payload.maker || "").trim();
   const columnName = String(payload.column || "").trim();
   const value = payload.value == null ? "" : payload.value;
 
-  if (!idAlianca || !columnName) {
-    return makerJson_({ ok: false, error: "missing idAlianca or column" });
+  if (!maker || !columnName) {
+    return makerJson_({ ok: false, error: "missing maker or column" });
   }
 
   const allowed = MAKER_WRITE_CONFIG.ALLOWED_COLUMNS.map(makerNormalizeHeader_);
@@ -92,7 +94,7 @@ function makerUpdateCell_(payload) {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
-  const idCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ID_HEADER);
+  const idCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const targetCol = makerFindColumn_(headers, columnName);
 
   if (idCol < 0 || targetCol < 0) {
@@ -100,7 +102,7 @@ function makerUpdateCell_(payload) {
   }
 
   for (let row = headerRow + 1; row < values.length; row += 1) {
-    if (String(values[row][idCol]).trim() === idAlianca) {
+    if (makerNormalizeHeader_(values[row][idCol]) === makerNormalizeHeader_(maker)) {
       sheet.getRange(row + 1, targetCol + 1).setValue(value);
       const statusCatman = makerSyncStatusCatman_(sheet, row + 1, headers, columnName);
       const paymentMethod = makerSyncPaymentMethod_(sheet, row + 1, headers, columnName);
@@ -109,7 +111,7 @@ function makerUpdateCell_(payload) {
     }
   }
 
-  return makerJson_({ ok: false, error: "idAlianca not found" });
+  return makerJson_({ ok: false, error: "maker not found" });
 }
 
 function makerSyncStatusCatman_(sheet, rowNumber, headers, changedColumnName) {
@@ -119,9 +121,9 @@ function makerSyncStatusCatman_(sheet, rowNumber, headers, changedColumnName) {
   if (statusCatmanCol < 0) return "";
 
   const statusCell = sheet.getRange(rowNumber, statusCatmanCol + 1);
-  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const anchorValue = makerGetAnchorValue_(sheet, rowNumber, headers);
 
-  if (!String(columnCValue || "").trim()) {
+  if (!makerHasColumnCValue_(anchorValue)) {
     statusCell.clearContent();
     statusCell.clearDataValidations();
     return "";
@@ -141,7 +143,7 @@ function makerSyncPaymentMethod_(sheet, rowNumber, headers, changedColumnName) {
   if (paymentMethodCol < 0) return "";
 
   const paymentCell = sheet.getRange(rowNumber, paymentMethodCol + 1);
-  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const columnCValue = makerGetAnchorValue_(sheet, rowNumber, headers);
 
   if (!makerHasColumnCValue_(columnCValue)) {
     paymentCell.clearContent();
@@ -163,7 +165,7 @@ function makerSyncStatusFpa_(sheet, rowNumber, headers) {
   if (statusFpaCol < 0) return "";
 
   const statusCell = sheet.getRange(rowNumber, statusFpaCol + 1);
-  const columnCValue = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const columnCValue = makerGetAnchorValue_(sheet, rowNumber, headers);
 
   if (!makerHasColumnCValue_(columnCValue)) {
     statusCell.clearContent();
@@ -225,8 +227,10 @@ function aplicarDropdownStatusCatmanMaker() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
+  const anchorCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN", "STATUS_CATMAN"]);
 
+  if (anchorCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusCatmanCol < 0) throw new Error("Coluna STATUS CATMAN nao encontrada.");
 
   const firstDataRow = headerRow + 2;
@@ -243,7 +247,7 @@ function aplicarDropdownStatusCatmanMaker() {
   const validations = [];
 
   bodyRows.forEach((row) => {
-    const columnCValue = row[2] || "";
+    const columnCValue = row[anchorCol] || "";
 
     if (!String(columnCValue || "").trim()) {
       output.push([""]);
@@ -264,10 +268,12 @@ function aplicarDropdownStatusFpaMaker() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
+  const anchorCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const statusFpaCol = makerFindColumnByCandidates_(headers, ["STATUS FP&A", "STATUS FPA", "STATUS FPNA"]);
   const statusCatmanCol = makerFindColumnByCandidates_(headers, ["STATUS CATMAN"]);
   const valorPagamentoCol = makerFindColumnByCandidates_(headers, ["VALOR_PAGAMENTO", "VALOR PAGAMENTO", "PAGAMENTO"]);
 
+  if (anchorCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusFpaCol < 0) throw new Error("Coluna STATUS FP&A nao encontrada.");
 
   const firstDataRow = headerRow + 2;
@@ -279,7 +285,7 @@ function aplicarDropdownStatusFpaMaker() {
   bodyRows.forEach((row, index) => {
     const rowNumber = firstDataRow + index;
     const statusCell = sheet.getRange(rowNumber, statusFpaCol + 1);
-    const columnCValue = row[2] || "";
+    const columnCValue = row[anchorCol] || "";
 
     if (!makerHasColumnCValue_(columnCValue)) {
       statusCell.clearContent();
@@ -305,8 +311,10 @@ function aplicarDropdownFormaPagamentoMaker() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
+  const anchorCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const paymentMethodCol = makerFindColumnByCandidates_(headers, ["FORMA DE PAGAMENTO", "FORMA_PAGAMENTO"]);
 
+  if (anchorCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (paymentMethodCol < 0) throw new Error("Coluna Forma de Pagamento nao encontrada.");
 
   const firstDataRow = headerRow + 2;
@@ -323,7 +331,7 @@ function aplicarDropdownFormaPagamentoMaker() {
   const validations = [];
 
   bodyRows.forEach((row) => {
-    const columnCValue = row[2] || "";
+    const columnCValue = row[anchorCol] || "";
 
     if (!makerHasColumnCValue_(columnCValue)) {
       output.push([""]);
@@ -382,6 +390,12 @@ function makerHasColumnCValue_(value) {
   return Boolean(String(value || "").trim());
 }
 
+function makerGetAnchorValue_(sheet, rowNumber, headers) {
+  const anchorCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
+  if (anchorCol < 0) return "";
+  return sheet.getRange(rowNumber, anchorCol + 1).getDisplayValue();
+}
+
 function makerGetSheet_() {
   const spreadsheet = MAKER_WRITE_CONFIG.SPREADSHEET_ID
     ? SpreadsheetApp.openById(MAKER_WRITE_CONFIG.SPREADSHEET_ID)
@@ -409,7 +423,7 @@ function makerParsePayload_(e) {
 }
 
 function makerFindHeaderRow_(values) {
-  const target = makerNormalizeHeader_(MAKER_WRITE_CONFIG.ID_HEADER);
+  const target = makerNormalizeHeader_(MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const index = values.findIndex((row) => row.map(makerNormalizeHeader_).includes(target));
   return index >= 0 ? index : 0;
 }

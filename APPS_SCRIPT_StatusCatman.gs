@@ -16,7 +16,7 @@
 
 const STATUS_CATMAN_CONFIG = {
   SHEET_NAME: "Maker",
-  HEADER_ID: "ID_ALIANCA",
+  HEADER_ID: "MAKER",
   STATUS_HEADER: "STATUS CATMAN"
 };
 
@@ -29,10 +29,12 @@ function atualizarStatusCatmanDropdown() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoStatusCatman_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaStatusCatman_(headers, ["MAKER"]);
   const statusCatmanCol = encontrarColunaStatusCatman_(headers, [STATUS_CATMAN_CONFIG.STATUS_HEADER, "STATUS_CATMAN"]);
   const firstDataRow = headerRow + 2;
   const lastRow = sheet.getLastRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusCatmanCol < 0) throw new Error("Coluna STATUS CATMAN nao encontrada.");
   if (lastRow < firstDataRow) return;
 
@@ -46,9 +48,9 @@ function atualizarStatusCatmanDropdown() {
   const validations = [];
 
   bodyRows.forEach((row) => {
-    const valorColunaC = row[2] || "";
+    const valorMaker = row[makerCol] || "";
 
-    if (!String(valorColunaC).trim()) {
+    if (!String(valorMaker).trim()) {
       output.push([""]);
       validations.push([null]);
       return;
@@ -73,14 +75,16 @@ function statusCatmanAoEditar(e) {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoStatusCatman_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaStatusCatman_(headers, ["MAKER"]);
   const statusCatmanCol = encontrarColunaStatusCatman_(headers, [STATUS_CATMAN_CONFIG.STATUS_HEADER, "STATUS_CATMAN"]);
   const rowNumber = range.getRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusCatmanCol < 0) throw new Error("Coluna STATUS CATMAN nao encontrada.");
   if (rowNumber <= headerRow + 1) return;
-  if (![3, statusCatmanCol + 1].includes(range.getColumn())) return;
+  if (![makerCol + 1, statusCatmanCol + 1].includes(range.getColumn())) return;
 
-  const valorColunaC = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const valorColunaC = sheet.getRange(rowNumber, makerCol + 1).getDisplayValue();
   const statusCell = sheet.getRange(rowNumber, statusCatmanCol + 1);
 
   if (!String(valorColunaC).trim()) {

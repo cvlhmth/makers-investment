@@ -63,7 +63,6 @@ const ND_WEB_HEADERS = [
   "MES",
   "VALOR EMISSAO ND",
   "VALOR FINAL EXTENSO",
-  "ID_ALIANCA",
   "STATUS CATMAN",
   "CHAVE_ORIGEM",
   "CRIADO_EM",
@@ -216,7 +215,6 @@ function ndWebCreateNds_(rows) {
       MES: rowInput.mes || "",
       "VALOR EMISSAO ND": valorNumber,
       "VALOR FINAL EXTENSO": rowInput.valorFinalExtenso || "",
-      ID_ALIANCA: rowInput.idAlianca || "",
       "STATUS CATMAN": rowInput.statusCatman || "Validado",
       CHAVE_ORIGEM: allKeys[0] || "",
       CRIADO_EM: now,
@@ -359,22 +357,19 @@ function ndWebFindMakerInTable_(rows, input, fallback) {
   if (!rows || rows.length < 2) return null;
 
   const headers = rows[0].map(String);
-  const idCol = ndWebFindHeaderColumn_(headers, ["ID_ALIANCA", "ID ALIANCA", "ID ALIANZA"]);
   const makerCol = ndWebFindHeaderColumn_(headers, ["MAKER"]);
   const cnpjCol = ndWebFindHeaderColumn_(headers, ["CNPJ"]);
   const razaoCol = ndWebFindHeaderColumn_(headers, ["RAZAO SOCIAL", "RAZ\u00c3O SOCIAL"]);
   const enderecoCol = ndWebFindHeaderColumn_(headers, ["ENDERECO COMPLETO", "ENDERE\u00c7O COMPLETO", "ENDERECO", "ENDERE\u00c7O"]);
-  const inputId = String(input.idAlianca || "").trim();
   const inputMaker = ndWebNormalizeHeader_(input.maker);
 
-  if (makerCol < 0 && idCol < 0) return null;
+  if (makerCol < 0) return null;
 
   for (let index = 1; index < rows.length; index += 1) {
     const row = rows[index];
-    const sameId = inputId && idCol >= 0 && String(row[idCol] || "").trim() === inputId;
     const sameMaker = inputMaker && makerCol >= 0 && ndWebNormalizeHeader_(row[makerCol]) === inputMaker;
 
-    if (sameId || sameMaker) {
+    if (sameMaker) {
       const cnpj = cnpjCol >= 0 ? row[cnpjCol] || fallback.cnpj : fallback.cnpj;
       return {
         cnpj,
@@ -442,7 +437,6 @@ function ndWebCollectExistingKeys_(rows, headerMap) {
     if (ndWebIsSpecificRecordKey_(sourceKey)) keys.add(String(sourceKey));
 
     ndWebMakeRecordKeys_({
-      idAlianca: ndWebValueByHeader_(row, headerMap, "ID_ALIANCA"),
       maker: ndWebValueByHeader_(row, headerMap, "MAKER"),
       ano: ndWebValueByHeader_(row, headerMap, "ANO"),
       mes: ndWebValueByHeader_(row, headerMap, "MES"),
@@ -466,15 +460,10 @@ function ndWebUnique_(values) {
 
 function ndWebMakeRecordKeys_(input) {
   const keys = [];
-  const idAlianca = String(input.idAlianca || "").trim();
   const maker = ndWebNormalizeHeader_(input.maker);
   const year = String(input.ano || "").trim();
   const month = String(input.mes || "").trim();
   const value = ndWebParseNumber_(input.valorValidado).toFixed(2);
-
-  if (idAlianca && year && month && value !== "0.00") {
-    keys.push("id-year-month-value:" + idAlianca + "|" + year + "|" + month + "|" + value);
-  }
 
   if (maker && year && month && value !== "0.00") {
     keys.push("maker-year-month-value:" + maker + "|" + year + "|" + month + "|" + value);

@@ -14,7 +14,7 @@
 
 const STATUS_ND_CONFIG = {
   SHEET_NAME: "Maker",
-  HEADER_ID: "ID_ALIANCA",
+  HEADER_ID: "MAKER",
   STATUS_HEADER: "STATUS_ND",
   LINK_COLUMN_NUMBER: 15
 };
@@ -28,21 +28,23 @@ function atualizarStatusNdPorLink() {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoStatusNd_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaStatusNd_(headers, ["MAKER"]);
   const statusNdCol = encontrarColunaStatusNd_(headers, [STATUS_ND_CONFIG.STATUS_HEADER, "STATUS ND"]);
   const firstDataRow = headerRow + 2;
   const lastRow = sheet.getLastRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusNdCol < 0) throw new Error("Coluna STATUS_ND nao encontrada.");
   if (lastRow < firstDataRow) return;
 
   const bodyRows = values.slice(headerRow + 1);
 
   bodyRows.forEach((row, index) => {
-    const valorColunaC = row[2] || "";
+    const valorMaker = row[makerCol] || "";
     const rowNumber = firstDataRow + index;
     const statusCell = sheet.getRange(rowNumber, statusNdCol + 1);
 
-    if (!temValorNaColunaCStatusNd_(valorColunaC)) {
+    if (!temValorNaColunaCStatusNd_(valorMaker)) {
       statusCell.clearContent();
       statusCell.clearDataValidations();
       return;
@@ -69,13 +71,15 @@ function statusNdAoEditar(e) {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = encontrarLinhaCabecalhoStatusNd_(values);
   const headers = values[headerRow];
+  const makerCol = encontrarColunaStatusNd_(headers, ["MAKER"]);
   const statusNdCol = encontrarColunaStatusNd_(headers, [STATUS_ND_CONFIG.STATUS_HEADER, "STATUS ND"]);
   const rowNumber = range.getRow();
 
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada.");
   if (statusNdCol < 0) throw new Error("Coluna STATUS_ND nao encontrada.");
   if (rowNumber <= headerRow + 1) return;
 
-  const valorColunaC = sheet.getRange(rowNumber, 3).getDisplayValue();
+  const valorColunaC = sheet.getRange(rowNumber, makerCol + 1).getDisplayValue();
   const statusCell = sheet.getRange(rowNumber, statusNdCol + 1);
 
   if (!temValorNaColunaCStatusNd_(valorColunaC)) {

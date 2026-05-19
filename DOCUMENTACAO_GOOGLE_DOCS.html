@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Makers Investment - Documentacao do Site</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #202124; line-height: 1.45; margin: 48px; }
+  h1 { color: #ff441a; font-size: 30px; margin: 0 0 18px; }
+  h2 { color: #14141a; font-size: 20px; margin: 28px 0 8px; border-bottom: 1px solid #e6e6e6; padding-bottom: 6px; }
+  h3 { color: #333; font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 8px 0; }
+  .spacer { margin: 10px 0; }
+  code { font-family: Consolas, monospace; background: #f1f3f4; padding: 1px 4px; border-radius: 4px; }
+  pre { background: #f7f7f8; border: 1px solid #e4e4e8; border-radius: 8px; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { background: transparent; padding: 0; }
+  ul { margin-top: 6px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<h1>Makers Investment - documentacao do site</h1>
+<p class="spacer"></p>
+<p>Este documento explica como o site funciona, como publicar no GitHub Pages e como fazer novas alteracoes depois.</p>
+<p class="spacer"></p>
+<h2>1. O que este projeto e</h2>
+<p class="spacer"></p>
+<p>Este site e um painel estatico em HTML, CSS e JavaScript. Ele nao precisa de servidor proprio para abrir a tela.</p>
+<p class="spacer"></p>
+<p>Arquivos principais:</p>
+<p class="spacer"></p>
+<pre><code>index.html       Estrutura da pagina
+styles.css       Visual, layout, cores, tabela e responsividade
+app.js           Logica do dashboard, filtros, leitura do Sheets e edicoes
+rappi-logo.png   Logo usada no topo
+README.md        Resumo tecnico
+DOCUMENTACAO.md  Este guia</code></pre>
+<p class="spacer"></p>
+<h2>2. Como o site funciona</h2>
+<p class="spacer"></p>
+<p>O site abre o <code>index.html</code> e o JavaScript em <code>app.js</code> busca os dados direto do Google Sheets.</p>
+<p class="spacer"></p>
+<p>Hoje existem duas fontes principais:</p>
+<p class="spacer"></p>
+<pre><code>Aba Maker
+https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=0&amp;single=true&amp;output=csv
+
+Aba filters
+https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&amp;single=true&amp;output=csv</code></pre>
+<p class="spacer"></p>
+<p>A aba <code>Maker</code> alimenta a tabela principal.</p>
+<p class="spacer"></p>
+<p>A aba <code>filters</code> alimenta listas de opcoes, como <code>CATMAN</code>, <code>Status Catman</code> e <code>Status FP&amp;A</code>.</p>
+<p class="spacer"></p>
+<h2>3. O que precisa publicar e o que nao precisa</h2>
+<p class="spacer"></p>
+<p>Quando voce muda o visual ou codigo do site, precisa publicar de novo:</p>
+<p class="spacer"></p>
+<pre><code>index.html
+styles.css
+app.js
+rappi-logo.png
+README.md
+DOCUMENTACAO.md</code></pre>
+<p class="spacer"></p>
+<p>Quando voce muda apenas dados na planilha Google Sheets, nao precisa publicar de novo. O site busca os dados da planilha.</p>
+<p class="spacer"></p>
+<p>Exemplos que precisam de <code>git push</code>:</p>
+<p class="spacer"></p>
+<pre><code>Trocar layout
+Mudar cor
+Adicionar texto na header
+Fixar coluna
+Alterar regra de filtro
+Alterar logica de edicao
+Trocar logo</code></pre>
+<p class="spacer"></p>
+<p>Exemplos que nao precisam de <code>git push</code>:</p>
+<p class="spacer"></p>
+<pre><code>Adicionar linhas na planilha
+Mudar status na planilha
+Atualizar valores na planilha
+Alterar opcoes na aba filters</code></pre>
+<p class="spacer"></p>
+<h2>4. Como testar localmente</h2>
+<p class="spacer"></p>
+<p>Voce pode abrir direto:</p>
+<p class="spacer"></p>
+<pre><code>C:\Users\matheus.carvalho\Documents\New project\sheets-dashboard-static\index.html</code></pre>
+<p class="spacer"></p>
+<p>Ou clicar duas vezes no <code>index.html</code>.</p>
+<p class="spacer"></p>
+<p>Se a tela mostrar algo como:</p>
+<p class="spacer"></p>
+<pre><code>Conectado ao Google Sheets (aba Maker), 247 registros</code></pre>
+<p class="spacer"></p>
+<p>entao a leitura da planilha funcionou.</p>
+<p class="spacer"></p>
+<h2>5. Como publicar pela primeira vez no GitHub Pages</h2>
+<p class="spacer"></p>
+<p>Abra a pasta certa no VS Code:</p>
+<p class="spacer"></p>
+<pre><code>C:\Users\matheus.carvalho\Documents\New project\sheets-dashboard-static</code></pre>
+<p class="spacer"></p>
+<p>No terminal:</p>
+<p class="spacer"></p>
+<pre><code>git init
+git add index.html styles.css app.js rappi-logo.png README.md DOCUMENTACAO.md
+git commit -m "Publica Makers Investment"
+git branch -M main
+git remote add origin https://github.com/SEU-USUARIO/makers-investment.git
+git push -u origin main</code></pre>
+<p class="spacer"></p>
+<p>Depois, no GitHub:</p>
+<p class="spacer"></p>
+<pre><code>Repository &gt; Settings &gt; Pages
+Source: Deploy from a branch
+Branch: main
+Folder: /root
+Save</code></pre>
+<p class="spacer"></p>
+<p>O link fica parecido com:</p>
+<p class="spacer"></p>
+<pre><code>https://SEU-USUARIO.github.io/makers-investment/</code></pre>
+<p class="spacer"></p>
+<h2>6. Como publicar uma alteracao depois</h2>
+<p class="spacer"></p>
+<p>Depois de alterar qualquer arquivo do site, rode:</p>
+<p class="spacer"></p>
+<pre><code>git status
+git add index.html styles.css app.js rappi-logo.png README.md DOCUMENTACAO.md
+git commit -m "Descreva a alteracao"
+git push</code></pre>
+<p class="spacer"></p>
+<p>Exemplo:</p>
+<p class="spacer"></p>
+<pre><code>git add index.html styles.css
+git commit -m "Fixa colunas ID e Maker na tabela"
+git push</code></pre>
+<p class="spacer"></p>
+<p>O GitHub Pages atualiza automaticamente depois do <code>git push</code>.</p>
+<p class="spacer"></p>
+<p>Normalmente demora de 1 a 3 minutos.</p>
+<p class="spacer"></p>
+<h2>7. Como saber se publicou</h2>
+<p class="spacer"></p>
+<p>Depois do push:</p>
+<p class="spacer"></p>
+<pre><code>GitHub &gt; Repository &gt; Actions</code></pre>
+<p class="spacer"></p>
+<p>Veja se o deploy terminou verde.</p>
+<p class="spacer"></p>
+<p>Depois abra:</p>
+<p class="spacer"></p>
+<pre><code>https://SEU-USUARIO.github.io/makers-investment/</code></pre>
+<p class="spacer"></p>
+<p>Use Ctrl + F5 no navegador se parecer que ainda esta carregando versao antiga.</p>
+<p class="spacer"></p>
+<h2>8. Como funciona a edicao no Google Sheets</h2>
+<p class="spacer"></p>
+<p>O site esta preparado para enviar alteracoes para um Apps Script.</p>
+<p class="spacer"></p>
+<p>Endpoint configurado hoje:</p>
+<p class="spacer"></p>
+<pre><code>https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec</code></pre>
+<p class="spacer"></p>
+<p>Quando alguem altera um campo editavel no site, o fluxo e:</p>
+<p class="spacer"></p>
+<pre><code>Usuario altera campo no site
+app.js salva a edicao localmente
+app.js envia para o Apps Script
+Apps Script atualiza a planilha
+Usuario atualiza o dashboard para confirmar</code></pre>
+<p class="spacer"></p>
+<p>Importante: por causa de limitacoes de CORS do Apps Script, o site pode mostrar:</p>
+<p class="spacer"></p>
+<pre><code>Enviado ao Sheets, atualize para confirmar</code></pre>
+<p class="spacer"></p>
+<p>Isso significa que a chamada foi enviada, mas o navegador nao consegue ler a resposta completa do Apps Script.</p>
+<p class="spacer"></p>
+<h2>9. Token de escrita</h2>
+<p class="spacer"></p>
+<p>O codigo tem suporte para <code>Token de escrita</code>.</p>
+<p class="spacer"></p>
+<p>Se o token estiver vazio, o site pode mostrar:</p>
+<p class="spacer"></p>
+<pre><code>Informe o token para salvar no Sheets</code></pre>
+<p class="spacer"></p>
+<p>Esse token serve para evitar que qualquer pessoa envie alteracoes para a planilha.</p>
+<p class="spacer"></p>
+<p>Atencao: nunca coloque <code>client_secret</code> do Google OAuth no frontend. Tudo que esta em <code>index.html</code>, <code>styles.css</code> e <code>app.js</code> fica visivel para quem acessa o site.</p>
+<p class="spacer"></p>
+<p>O <code>client_id</code> pode ficar no frontend. O <code>client_secret</code> nao.</p>
+<p class="spacer"></p>
+<h2>10. Como mudar os dados usados pelo site</h2>
+<p class="spacer"></p>
+<p>As configuracoes principais ficam no topo do <code>app.js</code>:</p>
+<p class="spacer"></p>
+<pre><code>const GOOGLE_SHEET = {
+  source: "...link CSV da aba Maker...",
+  gid: "0",
+  sheetName: "Maker",
+  refreshMinutes: 0,
+  clientId: "...apps.googleusercontent.com",
+  writeEndpoint: "...Apps Script URL...",
+  writeSecret: "",
+  filtersSource: "...link CSV da aba filters...",
+  filtersSheetName: "filters"
+};</code></pre>
+<p class="spacer"></p>
+<p>Se trocar a planilha:</p>
+<p class="spacer"></p>
+<pre><code>1. Publique a nova aba como CSV
+2. Copie o link
+3. Troque `source` no app.js
+4. Se tiver nova aba filters, troque `filtersSource`
+5. Salve
+6. git add app.js
+7. git commit
+8. git push</code></pre>
+<p class="spacer"></p>
+<h2>11. Como alterar visual</h2>
+<p class="spacer"></p>
+<p>Altere <code>styles.css</code>.</p>
+<p class="spacer"></p>
+<p>Exemplos comuns:</p>
+<p class="spacer"></p>
+<pre><code>Header, logo, cores: procure por report-hero, rappi-logo, hero-title
+Cards de metricas: procure por metric ou metrics-grid
+Filtros: procure por toolbar
+Tabela: procure por table-wrap, th, td, column-row
+Colunas fixas: procure por nth-child(1) e nth-child(2)</code></pre>
+<p class="spacer"></p>
+<p>Depois:</p>
+<p class="spacer"></p>
+<pre><code>git add styles.css
+git commit -m "Atualiza visual"
+git push</code></pre>
+<p class="spacer"></p>
+<h2>12. Como alterar textos fixos</h2>
+<p class="spacer"></p>
+<p>Altere <code>index.html</code>.</p>
+<p class="spacer"></p>
+<p>Exemplos:</p>
+<p class="spacer"></p>
+<pre><code>Titulo: Makers Investment
+Subtitulo: Plano query vs execucao comercial - base Google Sheets
+Linha Slack: Slack: @matheus.carvalho @rita.kamensky
+Botao Configurar
+Labels dos campos de configuracao</code></pre>
+<p class="spacer"></p>
+<p>Depois:</p>
+<p class="spacer"></p>
+<pre><code>git add index.html
+git commit -m "Atualiza textos"
+git push</code></pre>
+<p class="spacer"></p>
+<h2>13. Como alterar filtros e opcoes</h2>
+<p class="spacer"></p>
+<p>Alguns filtros vem da planilha.</p>
+<p class="spacer"></p>
+<p>Na aba <code>filters</code>:</p>
+<p class="spacer"></p>
+<pre><code>Coluna A: Catman
+Coluna B: Status Catman
+Coluna C: Status FP&amp;A</code></pre>
+<p class="spacer"></p>
+<p>Quando mudar esses valores na planilha publicada, o site deve carregar as novas opcoes ao atualizar a pagina.</p>
+<p class="spacer"></p>
+<h2>14. Problemas comuns</h2>
+<p class="spacer"></p>
+<h3>O site nao atualizou depois do push</h3>
+<p class="spacer"></p>
+<p>Espere alguns minutos e use:</p>
+<p class="spacer"></p>
+<pre><code>Ctrl + F5</code></pre>
+<p class="spacer"></p>
+<p>Tambem confira:</p>
+<p class="spacer"></p>
+<pre><code>GitHub &gt; Actions</code></pre>
+<p class="spacer"></p>
+<h3>Erro 404 no GitHub Pages</h3>
+<p class="spacer"></p>
+<p>Verifique:</p>
+<p class="spacer"></p>
+<pre><code>Settings &gt; Pages
+Branch: main
+Folder: /root</code></pre>
+<p class="spacer"></p>
+<h3>Aparece conta GitHub suspensa no push</h3>
+<p class="spacer"></p>
+<p>Apague credenciais antigas:</p>
+<p class="spacer"></p>
+<pre><code>cmdkey /delete:git:https://github.com</code></pre>
+<p class="spacer"></p>
+<p>Depois remova tambem pelo Windows:</p>
+<p class="spacer"></p>
+<pre><code>Gerenciador de Credenciais &gt; Credenciais do Windows &gt; remover github.com</code></pre>
+<p class="spacer"></p>
+<h3>A planilha nao carrega</h3>
+<p class="spacer"></p>
+<p>Confira se o link CSV publicado ainda abre no navegador.</p>
+<p class="spacer"></p>
+<p>Se a planilha deixou de estar publicada, o site nao consegue ler.</p>
+<p class="spacer"></p>
+<h3>A edicao nao salva no Sheets</h3>
+<p class="spacer"></p>
+<p>Confira:</p>
+<p class="spacer"></p>
+<pre><code>Apps Script publicado como Web App
+URL /exec correta no app.js
+Token de escrita correto
+Permissao do Web App correta</code></pre>
+<p class="spacer"></p>
+<h2>15. Checklist antes de publicar</h2>
+<p class="spacer"></p>
+<p>Antes de dar <code>git push</code>, confira:</p>
+<p class="spacer"></p>
+<pre><code>index.html atualizado
+styles.css atualizado
+app.js atualizado se mudou logica
+rappi-logo.png existe
+Nao subir arquivos temporarios
+Nao subir client_secret
+git status revisado</code></pre>
+<p class="spacer"></p>
+<p>Comandos finais:</p>
+<p class="spacer"></p>
+<pre><code>git status
+git add index.html styles.css app.js rappi-logo.png README.md DOCUMENTACAO.md
+git commit -m "Atualiza dashboard"
+git push</code></pre>
+<p class="spacer"></p>
+
+</body>
+</html>
