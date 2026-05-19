@@ -12,7 +12,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "maker-anchor-links-v5";
+const CONFIG_VERSION = "maker-gid-1726147303-v6";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.configVersion",
@@ -505,7 +505,7 @@ async function loadFromConfiguredSheet() {
     }
 
     loadSampleData();
-    setConnectionStatus("Falha ao conectar, usando exemplo");
+    setConnectionStatus(`Falha ao conectar (${error.message || "erro desconhecido"}), usando exemplo`);
     els.configPanel.classList.add("is-open");
   }
 }
