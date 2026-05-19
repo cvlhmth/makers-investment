@@ -8,11 +8,12 @@ const GOOGLE_SHEET = {
   writeSecret: "",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   filtersSheetName: "filters",
+  linksSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1741032633&single=true&output=csv",
   linksSheetName: "Links"
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "maker-gid-1726147303-v6";
+const CONFIG_VERSION = "maker-links-source-v8";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.configVersion",
@@ -570,7 +571,7 @@ async function loadLinksSheet() {
   }
 
   try {
-    const matrix = await loadSheetMatrix(state.source, "", GOOGLE_SHEET.linksSheetName || "Links");
+    const matrix = await loadSheetMatrix(GOOGLE_SHEET.linksSource || state.source, "", GOOGLE_SHEET.linksSource ? "" : GOOGLE_SHEET.linksSheetName || "Links");
     const payload = matrixToObjects(matrix);
     const topicColumn = findPayloadColumn(payload.columns, ["topic", "topico", "tópico"]);
     const linkColumn = findPayloadColumn(payload.columns, ["link", "url"]);
@@ -589,7 +590,7 @@ async function loadLinksSheet() {
     renderLinks(state.links.length ? "" : "Nenhum link cadastrado.");
   } catch (error) {
     console.warn("Nao foi possivel carregar a aba Links.", error);
-    renderLinks("Links indisponíveis.");
+    renderLinks("Publique a aba Links ou use OAuth para carregar links.");
   }
 }
 

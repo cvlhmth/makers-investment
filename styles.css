@@ -1631,6 +1631,21 @@ a.primary-button {
   color: var(--rappi-orange);
 }
 
+.report-hero .links-toggle-button {
+  min-height: 36px;
+  border: 1px solid rgba(255, 65, 31, 0.28);
+  background: rgba(255, 65, 31, 0.08);
+  color: var(--rappi-orange);
+  font-weight: 900;
+}
+
+.report-hero .links-toggle-button:hover,
+.report-hero .links-toggle-button.is-active {
+  border-color: var(--rappi-orange);
+  background: var(--rappi-orange);
+  color: #fff;
+}
+
 button:disabled,
 .primary-button:disabled {
   cursor: not-allowed;
