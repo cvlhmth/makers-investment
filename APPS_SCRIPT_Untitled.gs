@@ -77,6 +77,78 @@ function doPost(e) {
   }
 }
 
+function sincronizarMakersCatman() {
+  const result = makerSyncMissingCatman_();
+  Logger.log(JSON.stringify(result));
+  return result;
+}
+
+function makerSyncMissingCatman_() {
+  const spreadsheet = MAKER_WRITE_CONFIG.SPREADSHEET_ID
+    ? SpreadsheetApp.openById(MAKER_WRITE_CONFIG.SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
+
+  const makerSheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.SHEET_NAME);
+  if (!makerSheet) throw new Error("Aba Maker nao encontrada.");
+
+  let catmanSheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
+  if (!catmanSheet) catmanSheet = spreadsheet.insertSheet(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
+
+  const catmanHeaderMap = makerEnsureCatmanHeaders_(catmanSheet, ["MAKER"]);
+  const catmanMakerCol = catmanHeaderMap[makerNormalizeHeader_("MAKER")];
+  if (!catmanMakerCol) throw new Error("Coluna MAKER nao encontrada na aba Catman.");
+
+  const catmanValues = catmanSheet.getDataRange().getDisplayValues();
+  const existingMakers = new Set();
+  for (let row = 1; row < catmanValues.length; row += 1) {
+    const makerKey = makerNormalizeHeader_(catmanValues[row][catmanMakerCol - 1]);
+    if (makerKey) existingMakers.add(makerKey);
+  }
+
+  const makerValues = makerSheet.getDataRange().getDisplayValues();
+  const makerHeaderRow = makerFindHeaderRow_(makerValues);
+  const makerHeaders = makerValues[makerHeaderRow] || [];
+  const makerCol = makerFindColumnByCandidates_(makerHeaders, ["MAKER"]);
+  if (makerCol < 0) throw new Error("Coluna MAKER nao encontrada na aba Maker.");
+
+  const lastColumn = Math.max(catmanSheet.getLastColumn(), catmanMakerCol);
+  const rowsToAppend = [];
+  let skipped = 0;
+  let blankMakers = 0;
+
+  for (let row = makerHeaderRow + 1; row < makerValues.length; row += 1) {
+    const maker = String(makerValues[row][makerCol] || "").trim();
+    if (!maker) {
+      blankMakers += 1;
+      continue;
+    }
+
+    const makerKey = makerNormalizeHeader_(maker);
+    if (existingMakers.has(makerKey)) {
+      skipped += 1;
+      continue;
+    }
+
+    existingMakers.add(makerKey);
+
+    const outputRow = new Array(lastColumn).fill("");
+    outputRow[catmanMakerCol - 1] = maker;
+    rowsToAppend.push(outputRow);
+  }
+
+  if (rowsToAppend.length) {
+    const startRow = Math.max(catmanSheet.getLastRow() + 1, 2);
+    catmanSheet.getRange(startRow, 1, rowsToAppend.length, lastColumn).setValues(rowsToAppend);
+  }
+
+  return {
+    ok: true,
+    inserted: rowsToAppend.length,
+    skipped,
+    blankMakers
+  };
+}
+
 function makerUpsertCatman_(payload) {
   if (String(payload.secret || "") !== String(makerGetSecret_())) {
     return makerJson_({ ok: false, error: "unauthorized" });
@@ -93,42 +165,22 @@ function makerUpsertCatman_(payload) {
   let sheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
 
-  const requiredHeaders = [
-    "CATMAN",
-    "ID_ALIANCA",
-    "MAKER",
-    "CNPJ",
-    "EMAIL FORNECEDOR",
-    "RAZAO SOCIAL",
-    "ENDERECO COMPLETO"
-  ];
+  const requiredHeaders = ["MAKER"];
   const headerMap = makerEnsureCatmanHeaders_(sheet, requiredHeaders);
   const values = sheet.getDataRange().getDisplayValues();
   const makerCol = headerMap[makerNormalizeHeader_("MAKER")];
   if (!makerCol) return makerJson_({ ok: false, error: "column MAKER not found" });
 
-  let targetRow = -1;
   for (let row = 1; row < values.length; row += 1) {
     if (makerNormalizeHeader_(values[row][makerCol - 1]) === makerNormalizeHeader_(maker)) {
-      targetRow = row + 1;
-      break;
+      return makerJson_({ ok: true, skipped: true, row: row + 1, maker });
     }
   }
 
-  if (targetRow < 0) {
-    targetRow = Math.max(sheet.getLastRow() + 1, 2);
-    sheet.getRange(targetRow, makerCol).setValue(maker);
-  }
-
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "CATMAN", record.catman);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "ID_ALIANCA", record.idAlianca);
+  const targetRow = Math.max(sheet.getLastRow() + 1, 2);
   makerSetCatmanValue_(sheet, targetRow, headerMap, "MAKER", maker);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "CNPJ", record.cnpj);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "EMAIL FORNECEDOR", record.emailFornecedor);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "RAZAO SOCIAL", record.razaoSocial);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "ENDERECO COMPLETO", record.enderecoCompleto);
 
-  return makerJson_({ ok: true, row: targetRow, maker });
+  return makerJson_({ ok: true, created: true, row: targetRow, maker });
 }
 
 function makerUpdateCell_(payload) {
