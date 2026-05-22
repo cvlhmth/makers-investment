@@ -905,13 +905,29 @@ function buildColumns(sourceColumns) {
 
 function getColumnDisplayLabel(label) {
   const normalized = normalizeHeader(label);
-  if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o (formato 27,103.48)";
-  if (normalized === "valor emissao nd" || normalized === "valor_emissao_nd") return "Valor Emissao ND (formato 27,103.48)";
-  if (normalized === "execucao") return "Pagamento (formato 27,103.48)";
-  if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento (formato 27,103.48)";
+  if (normalized === "valor query" || normalized === "valor execucao") return "Valor Execu\u00e7\u00e3o";
+  if (normalized === "valor emissao nd" || normalized === "valor_emissao_nd") return "Valor Emissao ND";
+  if (normalized === "execucao") return "Pagamento";
+  if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
   if (normalized === "forma_pagamento" || normalized === "forma de pagamento") return "Forma de Pagamento";
   if (normalized === "diff" || normalized === "dif") return "Cr\u00e9dito";
   return label;
+}
+
+function getColumnFormatHint(label) {
+  const normalized = normalizeHeader(label);
+  const columnsWithDecimalHint = [
+    "valor query",
+    "valor execucao",
+    "valor emissao nd",
+    "valor_emissao_nd",
+    "execucao",
+    "valor_pagamento",
+    "valor pagamento",
+    "valor pgto"
+  ];
+
+  return columnsWithDecimalHint.includes(normalized) ? "Ex: 27,103.48" : "";
 }
 
 function uniqueKey(base, index) {
@@ -1117,7 +1133,24 @@ function renderHead() {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = column.displayLabel || column.label;
+
+    const labelWrap = document.createElement("span");
+    labelWrap.className = "column-label-wrap";
+
+    const label = document.createElement("span");
+    label.className = "column-label";
+    label.textContent = column.displayLabel || column.label;
+    labelWrap.append(label);
+
+    const hint = getColumnFormatHint(column.label);
+    if (hint) {
+      const hintEl = document.createElement("span");
+      hintEl.className = "column-format-hint";
+      hintEl.textContent = hint;
+      labelWrap.append(hintEl);
+    }
+
+    button.append(labelWrap);
     button.addEventListener("click", () => sortBy(column.key));
 
     th.append(button);

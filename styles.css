@@ -529,6 +529,21 @@ th button {
   text-transform: inherit;
 }
 
+.column-label-wrap,
+.column-label {
+  display: block;
+}
+
+.column-format-hint {
+  display: block;
+  margin-top: 3px;
+  color: var(--rappi-soft-text);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: none;
+}
+
 th button::after {
   content: "sort";
   color: #a8a39c;
