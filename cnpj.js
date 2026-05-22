@@ -1,6 +1,7 @@
 const CNPJ_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1726147303&single=true&output=csv",
   catmanSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1975482772&single=true&output=csv",
+  filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec"
 };
 
@@ -14,6 +15,7 @@ const cnpjState = {
   writeSecret: "",
   records: [],
   filteredRecords: [],
+  catmanOptions: [],
   filters: {
     search: "",
     quick: "missing"
@@ -88,11 +90,16 @@ async function loadCnpjData() {
   setCnpjConnectionStatus("Carregando bases Maker e Catman...");
 
   try {
-    const [makerPayload, catmanPayload] = await Promise.all([
+    const [makerPayload, catmanPayload, filtersMatrix] = await Promise.all([
       loadCsvObjects(CNPJ_CONFIG.makerSource),
-      loadCsvObjects(CNPJ_CONFIG.catmanSource)
+      loadCsvObjects(CNPJ_CONFIG.catmanSource),
+      loadCsvMatrix(CNPJ_CONFIG.filtersSource).catch((error) => {
+        console.warn("Nao foi possivel carregar a aba filters para Catman.", error);
+        return [];
+      })
     ]);
 
+    cnpjState.catmanOptions = extractCatmanOptions(filtersMatrix);
     cnpjState.records = buildCnpjRecords(makerPayload.rows, catmanPayload.rows);
     applyCnpjFiltersAndRender();
     setCnpjConnectionStatus(`Conectado ao Google Sheets, ${cnpjState.records.length} makers`);
@@ -174,7 +181,7 @@ function renderCnpjTable() {
     tr.dataset.maker = record.maker;
 
     appendReadonlyCnpjCell(tr, toTitleCase(record.maker));
-    appendInputCnpjCell(tr, "catman", record.catman, "Catman");
+    appendCatmanCnpjCell(tr, record.catman);
     appendInputCnpjCell(tr, "cnpj", record.cnpj, "00.000.000/0000-00");
     appendInputCnpjCell(tr, "emailFornecedor", record.emailFornecedor, "email@fornecedor.com");
     appendInputCnpjCell(tr, "razaoSocial", record.razaoSocial, "Razão social");
@@ -211,6 +218,23 @@ function appendInputCnpjCell(row, field, value, placeholder) {
   input.value = value || "";
   input.placeholder = placeholder;
   cell.append(input);
+  row.append(cell);
+}
+
+function appendCatmanCnpjCell(row, value) {
+  const cell = document.createElement("td");
+  const select = document.createElement("select");
+  select.className = "status-select person-select";
+  select.dataset.field = "catman";
+  select.append(new Option("-", ""));
+
+  const options = uniqueSorted([...cnpjState.catmanOptions, value].filter(isSelectableOption));
+  options.forEach((optionValue) => {
+    select.append(new Option(toTitleCase(optionValue), optionValue));
+  });
+
+  select.value = value || "";
+  cell.append(select);
   row.append(cell);
 }
 
@@ -264,6 +288,29 @@ async function loadCsvObjects(url) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return matrixToObjects(parseCsv(await response.text()));
+}
+
+async function loadCsvMatrix(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return parseCsv(await response.text());
+}
+
+function extractCatmanOptions(matrix) {
+  if (!matrix.length) return [];
+
+  const payload = matrixToObjects(matrix);
+  const catmanColumn = findPayloadColumn(payload.columns, ["catman"]);
+  if (catmanColumn) {
+    return uniqueSorted(payload.rows.map((row) => row[catmanColumn]).filter(isSelectableOption));
+  }
+
+  return uniqueSorted(matrix.map((row) => row[0]).filter(isCatmanOption));
+}
+
+function findPayloadColumn(columns, candidates) {
+  const normalizedCandidates = candidates.map(normalizeHeader);
+  return columns.find((column) => normalizedCandidates.includes(normalizeHeader(column))) || "";
 }
 
 function matrixToObjects(matrix) {
@@ -368,6 +415,27 @@ function toTitleCase(value) {
     .toLocaleLowerCase("pt-BR")
     .replace(/(^|[\s(-])([a-zà-ú])/gi, (match, separator, letter) => `${separator}${letter.toLocaleUpperCase("pt-BR")}`)
     .replace(/\b(ltda|sa|s\/a|me|epp|eireli)\b/gi, (match) => match.toLocaleUpperCase("pt-BR"));
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR", { numeric: true, sensitivity: "base" })
+  );
+}
+
+function isSelectableOption(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+
+  return !["#n/a", "#ref!", "#value!", "#error!", "#div/0!", "#name?", "#num!", "#null!"].includes(text.toLowerCase());
+}
+
+function isCatmanOption(value) {
+  const text = String(value || "").trim();
+  if (!isSelectableOption(text)) return false;
+
+  const normalized = normalizeHeader(text);
+  return !["catman", "status catman", "status fpa", "forma pagamento"].includes(normalized);
 }
 
 function updateCnpjWriteStatus(message = "", status = "") {
