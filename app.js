@@ -905,9 +905,10 @@ function buildColumns(sourceColumns) {
 
 function getColumnDisplayLabel(label) {
   const normalized = normalizeHeader(label);
-  if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o";
-  if (normalized === "execucao") return "Pagamento";
-  if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
+  if (normalized === "valor query") return "Valor Execu\u00e7\u00e3o (formato 27,103.48)";
+  if (normalized === "valor emissao nd" || normalized === "valor_emissao_nd") return "Valor Emissao ND (formato 27,103.48)";
+  if (normalized === "execucao") return "Pagamento (formato 27,103.48)";
+  if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento (formato 27,103.48)";
   if (normalized === "forma_pagamento" || normalized === "forma de pagamento") return "Forma de Pagamento";
   if (normalized === "diff" || normalized === "dif") return "Cr\u00e9dito";
   return label;
@@ -1245,9 +1246,13 @@ function renderEditableCell(row, column) {
 
   const input = document.createElement("input");
   input.className = "note-input";
-  input.value = value;
+  input.value = column.type === "currency" ? formatAmount(parseFlexibleNumber(value)) : value;
   input.type = normalized === "valor final" ? "text" : "text";
-  input.addEventListener("change", () => updateLocalEdit(row, column, input.value));
+  input.addEventListener("change", () => {
+    const nextValue = column.type === "currency" ? formatAmount(parseFlexibleNumber(input.value)) : input.value;
+    input.value = nextValue;
+    updateLocalEdit(row, column, nextValue);
+  });
   return input;
 }
 
@@ -1418,7 +1423,10 @@ function exportFilteredCsv() {
   const rows = [state.columns.map((column) => column.displayLabel || column.label)];
 
   state.filteredRows.forEach((row) => {
-    rows.push(state.columns.map((column) => row[column.key] ?? ""));
+    rows.push(state.columns.map((column) => {
+      const value = row[column.key] ?? "";
+      return column.type === "currency" || column.type === "diff" ? formatAmount(parseFlexibleNumber(value)) : value;
+    }));
   });
 
   const csv = rows.map((row) => row.map(escapeCsvValue).join(",")).join("\n");
@@ -1706,10 +1714,14 @@ function parseFlexibleNumber(value) {
 }
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  }).format(value || 0);
+  return formatAmount(value);
+}
+
+function formatAmount(value) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value) || 0);
 }
 
 function uniqueSorted(values) {

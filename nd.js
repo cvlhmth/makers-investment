@@ -317,7 +317,7 @@ function renderNdTable() {
     appendNdCell(tr, toTitleCase(record.maker));
     appendNdCell(tr, record.year || "-");
     appendNdCell(tr, record.month || "-");
-    appendNdCell(tr, formatCurrency(record.valueNumber));
+    appendNdCell(tr, formatAmount(record.valueNumber));
     appendNdCell(tr, record.valorFinalExtenso || "-");
     appendNdCell(tr, displayCatmanStatus(record.statusCatman));
 
@@ -367,7 +367,7 @@ async function createNds() {
     ano: record.year,
     mes: record.month,
     cnpj: record.cnpj,
-    valorValidado: record.valorValidado,
+    valorValidado: formatAmount(record.valueNumber),
     valorFinalExtenso: record.valorFinalExtenso,
     statusCatman: displayCatmanStatus(record.statusCatman),
     sourceKeys: record.sourceKeys
@@ -397,7 +397,7 @@ async function createNds() {
 }
 
 function exportReadyNdCsv() {
-  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR EMISSAO ND", "VALOR FINAL EXTENSO", "STATUS CATMAN", "CNPJ"]];
+  const rows = [["N_ND", "MAKER", "ANO", "MES", "VALOR EMISSAO ND (formato 27,103.48)", "VALOR FINAL EXTENSO", "STATUS CATMAN", "CNPJ"]];
 
   ndState.records
     .filter((record) => record.status === ND_STATUS.ready)
@@ -407,7 +407,7 @@ function exportReadyNdCsv() {
         record.maker,
         record.year,
         record.month,
-        record.valorValidado,
+        formatAmount(record.valueNumber),
         record.valorFinalExtenso,
         displayCatmanStatus(record.statusCatman),
         record.cnpj
@@ -635,10 +635,14 @@ function parseFlexibleNumber(value) {
 }
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  }).format(value || 0);
+  return formatAmount(value);
+}
+
+function formatAmount(value) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value) || 0);
 }
 
 function normalizeHeader(value) {

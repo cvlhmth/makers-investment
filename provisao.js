@@ -366,9 +366,9 @@ function parseProvisionNumber(value) {
 }
 
 function formatProvisionCurrency(value, currency) {
-  return new Intl.NumberFormat(currency === "USD" ? "en-US" : "pt-BR", {
-    style: "currency",
-    currency
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(Number(value) || 0);
 }
 
