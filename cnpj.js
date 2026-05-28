@@ -187,15 +187,6 @@ function renderCnpjTable() {
     appendInputCnpjCell(tr, "razaoSocial", record.razaoSocial, "Razão social");
     appendInputCnpjCell(tr, "enderecoCompleto", record.enderecoCompleto, "Endereço completo");
 
-    const action = document.createElement("td");
-    const button = document.createElement("button");
-    button.className = "primary-button compact-action";
-    button.type = "button";
-    button.textContent = "Salvar";
-    button.addEventListener("click", () => saveCnpjRecord(record, tr));
-    action.append(button);
-    tr.append(action);
-
     fragment.append(tr);
   });
 
@@ -217,6 +208,7 @@ function appendInputCnpjCell(row, field, value, placeholder) {
   input.dataset.field = field;
   input.value = value || "";
   input.placeholder = placeholder;
+  input.addEventListener("change", () => saveCnpjRecord(getCnpjRecordFromRow(row), row));
   cell.append(input);
   row.append(cell);
 }
@@ -234,8 +226,14 @@ function appendCatmanCnpjCell(row, value) {
   });
 
   select.value = value || "";
+  select.addEventListener("change", () => saveCnpjRecord(getCnpjRecordFromRow(row), row));
   cell.append(select);
   row.append(cell);
+}
+
+function getCnpjRecordFromRow(rowElement) {
+  const maker = rowElement.dataset.maker || "";
+  return cnpjState.records.find((record) => record.maker === maker) || { maker };
 }
 
 async function saveCnpjRecord(record, rowElement) {
