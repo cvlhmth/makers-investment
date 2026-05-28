@@ -165,22 +165,32 @@ function makerUpsertCatman_(payload) {
   let sheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(MAKER_WRITE_CONFIG.CATMAN_SHEET_NAME);
 
-  const requiredHeaders = ["MAKER"];
+  const requiredHeaders = ["MAKER", "ID_ALIANCA", "CATMAN", "CNPJ", "EMAIL FORNECEDOR", "RAZAO SOCIAL", "ENDERECO COMPLETO"];
   const headerMap = makerEnsureCatmanHeaders_(sheet, requiredHeaders);
   const values = sheet.getDataRange().getDisplayValues();
   const makerCol = headerMap[makerNormalizeHeader_("MAKER")];
   if (!makerCol) return makerJson_({ ok: false, error: "column MAKER not found" });
 
+  let targetRow = 0;
   for (let row = 1; row < values.length; row += 1) {
     if (makerNormalizeHeader_(values[row][makerCol - 1]) === makerNormalizeHeader_(maker)) {
-      return makerJson_({ ok: true, skipped: true, row: row + 1, maker });
+      targetRow = row + 1;
+      break;
     }
   }
 
-  const targetRow = Math.max(sheet.getLastRow() + 1, 2);
-  makerSetCatmanValue_(sheet, targetRow, headerMap, "MAKER", maker);
+  const created = !targetRow;
+  if (!targetRow) targetRow = Math.max(sheet.getLastRow() + 1, 2);
 
-  return makerJson_({ ok: true, created: true, row: targetRow, maker });
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "MAKER", maker);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "ID_ALIANCA", record.idAlianca);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "CATMAN", record.catman);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "CNPJ", record.cnpj);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "EMAIL FORNECEDOR", record.emailFornecedor);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "RAZAO SOCIAL", record.razaoSocial);
+  makerSetCatmanValue_(sheet, targetRow, headerMap, "ENDERECO COMPLETO", record.enderecoCompleto);
+
+  return makerJson_({ ok: true, created, updated: !created, row: targetRow, maker });
 }
 
 function makerUpdateCell_(payload) {
