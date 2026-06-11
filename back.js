@@ -1345,7 +1345,7 @@ async function sendSheetUpdate(row, column, value) {
   const idAlianca = String(row[idKey] || "").trim();
 
   if (!maker) {
-    setWriteStatus("Edi√ß√£o local, Maker n√£o encontrado", "error");
+    setWriteStatus("EdiÁ„o local, Nome n„o encontrado", "error");
     return;
   }
 
