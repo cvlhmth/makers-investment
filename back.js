@@ -1,5 +1,5 @@
 const GOOGLE_SHEET = {
-  source: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=567184749&single=true&output=csv",
+  source: "https://docs.google.com/spreadsheets/d/16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44/gviz/tq?tqx=out:csv&gid=567184749",
   gid: "567184749",
   sheetName: "Back",
   refreshMinutes: 0,
@@ -13,7 +13,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "back-csv-write-token-v1";
+const CONFIG_VERSION = "back-gviz-write-token-v2";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.back.configVersion",
@@ -1597,7 +1597,7 @@ function buildSheetSource(input, gid, sheetName) {
   const sheetId = extractSheetId(trimmed);
   const sheetParam = sheetName ? `&sheet=${encodeURIComponent(sheetName)}` : "";
 
-  if (trimmed.includes("output=csv") || trimmed.includes("format=csv")) {
+  if (trimmed.includes("output=csv") || trimmed.includes("format=csv") || trimmed.includes("tqx=out:csv")) {
     return { csvUrl: withSheetParams(trimmed, gid, sheetName), sheetId };
   }
 
