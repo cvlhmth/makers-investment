@@ -202,6 +202,7 @@ const EDITABLE_TEXT_COLUMNS = [
   "valor final",
   "valor emissao nd",
   "valor_emissao_nd",
+  "pagamento",
   "valor pagamento",
   "valor_pagamento",
   "valor pgto",
@@ -925,6 +926,7 @@ function getColumnDisplayLabel(label) {
   if (normalized === "valor query" || normalized === "valor execucao") return "Valor Execu\u00e7\u00e3o";
   if (normalized === "valor emissao nd" || normalized === "valor_emissao_nd") return "Valor Emissao ND";
   if (normalized === "execucao") return "Pagamento";
+  if (normalized === "pagamento") return "Pagamento";
   if (normalized === "valor_pagamento" || normalized === "valor pagamento") return "Pagamento";
   if (normalized === "forma_pagamento" || normalized === "forma de pagamento") return "Forma de Pagamento";
   if (normalized === "diff" || normalized === "dif") return "Cr\u00e9dito";
@@ -938,6 +940,7 @@ function getColumnFormatHint(label) {
     "valor execucao",
     "valor emissao nd",
     "valor_emissao_nd",
+    "pagamento",
     "execucao",
     "valor_pagamento",
     "valor pagamento",
@@ -982,7 +985,7 @@ function inferType(label) {
 
   if (normalized.includes("link")) return "link";
   if (normalized.includes("extenso")) return "text";
-  if (normalized.includes("valor") || normalized.includes("execucao") || normalized.includes("query")) return "currency";
+  if (normalized.includes("valor") || normalized.includes("execucao") || normalized.includes("query") || normalized === "pagamento") return "currency";
   if (normalized === "diff" || normalized === "dif") return "diff";
   if (normalized === "mes" || normalized === "ano") return "number";
   if (normalized.includes("emissao") || normalized.includes("envio") || normalized.includes("previsao") || normalized === "data pagamento" || normalized === "data_pagamento") return "date";
