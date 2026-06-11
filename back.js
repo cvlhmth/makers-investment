@@ -404,16 +404,16 @@ function bindEvents() {
 
   if (els.sampleButton) {
     els.sampleButton.addEventListener("click", () => {
-      state.source = "";
-      state.gid = "";
-      state.sheetName = "";
+      state.source = GOOGLE_SHEET.source;
+      state.gid = GOOGLE_SHEET.gid;
+      state.sheetName = GOOGLE_SHEET.sheetName;
       state.refreshMinutes = 0;
       state.writeEndpoint = GOOGLE_SHEET.writeEndpoint;
       state.writeSecret = "";
       state.accessToken = "";
-      els.sheetUrlInput.value = "";
-      els.gidInput.value = "";
-      els.sheetNameInput.value = "";
+      els.sheetUrlInput.value = state.source;
+      els.gidInput.value = state.gid;
+      els.sheetNameInput.value = state.sheetName;
       els.refreshMinutesInput.value = "0";
       els.writeEndpointInput.value = state.writeEndpoint;
       els.writeSecretInput.value = "";

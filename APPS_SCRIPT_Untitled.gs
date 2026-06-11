@@ -8,6 +8,7 @@
 const MAKER_WRITE_CONFIG = {
   SPREADSHEET_ID: "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44",
   SHEET_NAME: "Maker",
+  BACK_SHEET_NAME: "Back",
   CATMAN_SHEET_NAME: "Catman",
   SECRET: "1234",
   ANCHOR_HEADER: "MAKER",
@@ -201,6 +202,7 @@ function makerUpdateCell_(payload) {
   const maker = String(payload.maker || "").trim();
   const columnName = String(payload.column || "").trim();
   const value = payload.value == null ? "" : payload.value;
+  const sheetName = makerResolveEditableSheetName_(payload.sheetName);
 
   if (!maker || !columnName) {
     return makerJson_({ ok: false, error: "missing maker or column" });
@@ -211,7 +213,7 @@ function makerUpdateCell_(payload) {
     return makerJson_({ ok: false, error: "column not allowed" });
   }
 
-  const sheet = makerGetSheet_();
+  const sheet = makerGetSheet_(sheetName);
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
@@ -542,16 +544,23 @@ function makerSetCatmanValue_(sheet, rowNumber, headerMap, header, value) {
   if (col) sheet.getRange(rowNumber, col).setValue(value == null ? "" : value);
 }
 
-function makerGetSheet_() {
+function makerGetSheet_(sheetName) {
   const spreadsheet = MAKER_WRITE_CONFIG.SPREADSHEET_ID
     ? SpreadsheetApp.openById(MAKER_WRITE_CONFIG.SPREADSHEET_ID)
     : SpreadsheetApp.getActiveSpreadsheet();
 
   if (!spreadsheet) throw new Error("Planilha Maker nao encontrada.");
 
-  const sheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.SHEET_NAME);
-  if (!sheet) throw new Error("Aba Maker nao encontrada.");
+  const targetSheetName = sheetName || MAKER_WRITE_CONFIG.SHEET_NAME;
+  const sheet = spreadsheet.getSheetByName(targetSheetName);
+  if (!sheet) throw new Error("Aba " + targetSheetName + " nao encontrada.");
   return sheet;
+}
+
+function makerResolveEditableSheetName_(sheetName) {
+  const requested = String(sheetName || MAKER_WRITE_CONFIG.SHEET_NAME).trim();
+  const allowed = [MAKER_WRITE_CONFIG.SHEET_NAME, MAKER_WRITE_CONFIG.BACK_SHEET_NAME];
+  return allowed.find((name) => makerNormalizeHeader_(name) === makerNormalizeHeader_(requested)) || MAKER_WRITE_CONFIG.SHEET_NAME;
 }
 
 function makerGetSecret_() {
