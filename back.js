@@ -1,7 +1,7 @@
 const GOOGLE_SHEET = {
-  source: "https://docs.google.com/spreadsheets/d/16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44/gviz/tq?tqx=out:csv&gid=567184749",
-  gid: "567184749",
-  sheetName: "Back",
+  source: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=567184749&single=true&output=csv",
+  gid: "",
+  sheetName: "",
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
@@ -13,7 +13,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "back-gviz-write-token-v2";
+const CONFIG_VERSION = "back-published-csv-v3";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.back.configVersion",
@@ -542,7 +542,7 @@ async function loadSheetPayload(input, gid, sheetName) {
     }
     return csvToObjects(await response.text());
   } catch (fetchError) {
-    if (!source.sheetId) {
+    if (!source.sheetId || isPublishedCsvSource(input)) {
       throw fetchError;
     }
     return loadViaGviz(source.sheetId, gid, sheetName);
