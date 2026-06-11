@@ -8,7 +8,6 @@
 const MAKER_WRITE_CONFIG = {
   SPREADSHEET_ID: "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44",
   SHEET_NAME: "Maker",
-  BACK_SHEET_NAME: "Back",
   CATMAN_SHEET_NAME: "Catman",
   SECRET: "1234",
   ANCHOR_HEADER: "MAKER",
@@ -202,43 +201,30 @@ function makerUpdateCell_(payload) {
   const maker = String(payload.maker || "").trim();
   const columnName = String(payload.column || "").trim();
   const value = payload.value == null ? "" : payload.value;
-  const sheetName = makerResolveEditableSheetName_(payload.sheetName);
-  const anchorColumnName = String(payload.anchorColumn || MAKER_WRITE_CONFIG.ANCHOR_HEADER).trim();
-  const isBackSheet = makerNormalizeHeader_(sheetName) === makerNormalizeHeader_(MAKER_WRITE_CONFIG.BACK_SHEET_NAME);
-  const payloadRowNumber = Number(payload.rowNumber || 0);
 
   if (!maker || !columnName) {
     return makerJson_({ ok: false, error: "missing maker or column" });
   }
 
   const allowed = MAKER_WRITE_CONFIG.ALLOWED_COLUMNS.map(makerNormalizeHeader_);
-  if (!isBackSheet && !allowed.includes(makerNormalizeHeader_(columnName))) {
+  if (!allowed.includes(makerNormalizeHeader_(columnName))) {
     return makerJson_({ ok: false, error: "column not allowed" });
   }
 
-  const sheet = makerGetSheet_(sheetName);
+  const sheet = makerGetSheet_();
   const values = sheet.getDataRange().getDisplayValues();
-  const headerRow = makerFindHeaderRow_(values, anchorColumnName);
+  const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
-  const idCol = makerFindColumn_(headers, anchorColumnName);
+  const idCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const targetCol = makerFindColumn_(headers, columnName);
 
   if (idCol < 0 || targetCol < 0) {
     return makerJson_({ ok: false, error: "column not found" });
   }
 
-  if (isBackSheet && payloadRowNumber > headerRow + 1 && payloadRowNumber <= sheet.getLastRow()) {
-    sheet.getRange(payloadRowNumber, targetCol + 1).setValue(value);
-    return makerJson_({ ok: true, sheetName, row: payloadRowNumber, column: targetCol + 1, anchorColumn: anchorColumnName });
-  }
-
   for (let row = headerRow + 1; row < values.length; row += 1) {
     if (makerNormalizeHeader_(values[row][idCol]) === makerNormalizeHeader_(maker)) {
       sheet.getRange(row + 1, targetCol + 1).setValue(value);
-      if (isBackSheet) {
-        return makerJson_({ ok: true, sheetName, row: row + 1, column: targetCol + 1, anchorColumn: anchorColumnName });
-      }
-
       const statusCatman = makerSyncStatusCatman_(sheet, row + 1, headers, columnName);
       const paymentMethod = makerSyncPaymentMethod_(sheet, row + 1, headers, columnName);
       const statusFpa = makerSyncStatusFpa_(sheet, row + 1, headers);
@@ -556,23 +542,16 @@ function makerSetCatmanValue_(sheet, rowNumber, headerMap, header, value) {
   if (col) sheet.getRange(rowNumber, col).setValue(value == null ? "" : value);
 }
 
-function makerGetSheet_(sheetName) {
+function makerGetSheet_() {
   const spreadsheet = MAKER_WRITE_CONFIG.SPREADSHEET_ID
     ? SpreadsheetApp.openById(MAKER_WRITE_CONFIG.SPREADSHEET_ID)
     : SpreadsheetApp.getActiveSpreadsheet();
 
   if (!spreadsheet) throw new Error("Planilha Maker nao encontrada.");
 
-  const targetSheetName = sheetName || MAKER_WRITE_CONFIG.SHEET_NAME;
-  const sheet = spreadsheet.getSheetByName(targetSheetName);
-  if (!sheet) throw new Error("Aba " + targetSheetName + " nao encontrada.");
+  const sheet = spreadsheet.getSheetByName(MAKER_WRITE_CONFIG.SHEET_NAME);
+  if (!sheet) throw new Error("Aba Maker nao encontrada.");
   return sheet;
-}
-
-function makerResolveEditableSheetName_(sheetName) {
-  const requested = String(sheetName || MAKER_WRITE_CONFIG.SHEET_NAME).trim();
-  const allowed = [MAKER_WRITE_CONFIG.SHEET_NAME, MAKER_WRITE_CONFIG.BACK_SHEET_NAME];
-  return allowed.find((name) => makerNormalizeHeader_(name) === makerNormalizeHeader_(requested)) || MAKER_WRITE_CONFIG.SHEET_NAME;
 }
 
 function makerGetSecret_() {
@@ -589,23 +568,15 @@ function makerParsePayload_(e) {
   return JSON.parse((e && e.postData && e.postData.contents) || "{}");
 }
 
-function makerFindHeaderRow_(values, anchorHeader) {
-  const target = makerNormalizeHeader_(anchorHeader || MAKER_WRITE_CONFIG.ANCHOR_HEADER);
+function makerFindHeaderRow_(values) {
+  const target = makerNormalizeHeader_(MAKER_WRITE_CONFIG.ANCHOR_HEADER);
   const index = values.findIndex((row) => row.map(makerNormalizeHeader_).includes(target));
   return index >= 0 ? index : 0;
 }
 
 function makerFindColumn_(headers, name) {
   const target = makerNormalizeHeader_(name);
-  let index = headers.findIndex((header) => makerNormalizeHeader_(header) === target);
-  if (index >= 0) return index;
-
-  index = headers.findIndex((header) => {
-    const normalized = makerNormalizeHeader_(header);
-    return normalized && target && (normalized.includes(target) || target.includes(normalized));
-  });
-
-  return index;
+  return headers.findIndex((header) => makerNormalizeHeader_(header) === target);
 }
 
 function makerFindColumnByCandidates_(headers, candidates) {
