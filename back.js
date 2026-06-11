@@ -1,7 +1,7 @@
 const GOOGLE_SHEET = {
   source: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1726147303&single=true&output=csv",
-  gid: "1726147303",
-  sheetName: "Maker",
+  gid: "",
+  sheetName: "Back",
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
@@ -13,18 +13,18 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "maker-links-source-v8";
+const CONFIG_VERSION = "back-links-source-v1";
 
 const STORAGE_KEYS = {
-  configVersion: "sheets-dashboard.configVersion",
-  source: "sheets-dashboard.source",
-  gid: "sheets-dashboard.gid",
-  sheetName: "sheets-dashboard.sheetName",
-  refreshMinutes: "sheets-dashboard.refreshMinutes",
-  clientId: "sheets-dashboard.clientId",
+  configVersion: "sheets-dashboard.back.configVersion",
+  source: "sheets-dashboard.back.source",
+  gid: "sheets-dashboard.back.gid",
+  sheetName: "sheets-dashboard.back.sheetName",
+  refreshMinutes: "sheets-dashboard.back.refreshMinutes",
+  clientId: "sheets-dashboard.back.clientId",
   writeEndpoint: "sheets-dashboard.writeEndpoint",
   writeSecret: "sheets-dashboard.writeSecret",
-  edits: "sheets-dashboard.edits"
+  edits: "sheets-dashboard.back.edits"
 };
 
 const SAMPLE_COLUMNS = [
@@ -509,7 +509,7 @@ async function loadFromConfiguredSheet() {
     await loadLookupOptions();
     await loadLinksSheet();
     setDataset(payload.columns, payload.rows);
-    const location = state.sheetName ? `aba ${state.sheetName}` : state.gid ? `gid ${state.gid}` : "aba principal";
+    const location = state.sheetName ? `aba ${state.sheetName}` : state.gid ? `gid ${state.gid}` : "aba Back";
     const auto = state.refreshMinutes > 0 ? `, auto ${state.refreshMinutes} min` : "";
     setConnectionStatus(`Conectado ao Google Sheets (${location}), ${payload.rows.length} registros${auto}`);
   } catch (error) {
@@ -1351,6 +1351,7 @@ async function sendSheetUpdate(row, column, value) {
 
   const payload = {
     secret: state.writeSecret,
+    sheetName: "Back",
     maker,
     idAlianca,
     column: column.label,
