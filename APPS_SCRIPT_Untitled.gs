@@ -205,6 +205,7 @@ function makerUpdateCell_(payload) {
   const sheetName = makerResolveEditableSheetName_(payload.sheetName);
   const anchorColumnName = String(payload.anchorColumn || MAKER_WRITE_CONFIG.ANCHOR_HEADER).trim();
   const isBackSheet = makerNormalizeHeader_(sheetName) === makerNormalizeHeader_(MAKER_WRITE_CONFIG.BACK_SHEET_NAME);
+  const payloadRowNumber = Number(payload.rowNumber || 0);
 
   if (!maker || !columnName) {
     return makerJson_({ ok: false, error: "missing maker or column" });
@@ -224,6 +225,11 @@ function makerUpdateCell_(payload) {
 
   if (idCol < 0 || targetCol < 0) {
     return makerJson_({ ok: false, error: "column not found" });
+  }
+
+  if (isBackSheet && payloadRowNumber > headerRow + 1 && payloadRowNumber <= sheet.getLastRow()) {
+    sheet.getRange(payloadRowNumber, targetCol + 1).setValue(value);
+    return makerJson_({ ok: true, sheetName, row: payloadRowNumber, column: targetCol + 1, anchorColumn: anchorColumnName });
   }
 
   for (let row = headerRow + 1; row < values.length; row += 1) {

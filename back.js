@@ -898,6 +898,7 @@ function normalizeRow(row, index) {
   state.columns.forEach((column) => {
     normalized[column.key] = row[column.original] ?? row[column.key] ?? "";
   });
+  normalized.__rowNumber = index + 2;
   normalized.__id = makeRowId(normalized, index);
   return applyLocalEdits(normalized);
 }
@@ -1353,6 +1354,7 @@ async function sendSheetUpdate(row, column, value) {
     secret: state.writeSecret,
     sheetName: "Back",
     anchorColumn: getColumnLabelByKey(makerKey),
+    rowNumber: row.__rowNumber,
     maker,
     idAlianca,
     column: column.label,
