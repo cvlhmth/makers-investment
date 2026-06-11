@@ -1,11 +1,11 @@
 const GOOGLE_SHEET = {
-  source: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1726147303&single=true&output=csv",
-  gid: "",
+  source: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=567184749&single=true&output=csv",
+  gid: "567184749",
   sheetName: "Back",
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
-  writeSecret: "",
+  writeSecret: "1234",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   filtersSheetName: "filters",
   linksSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1741032633&single=true&output=csv",
@@ -13,7 +13,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "back-links-source-v1";
+const CONFIG_VERSION = "back-csv-write-token-v1";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.back.configVersion",
@@ -409,20 +409,20 @@ function bindEvents() {
       state.sheetName = GOOGLE_SHEET.sheetName;
       state.refreshMinutes = 0;
       state.writeEndpoint = GOOGLE_SHEET.writeEndpoint;
-      state.writeSecret = "";
+      state.writeSecret = GOOGLE_SHEET.writeSecret;
       state.accessToken = "";
       els.sheetUrlInput.value = state.source;
       els.gidInput.value = state.gid;
       els.sheetNameInput.value = state.sheetName;
       els.refreshMinutesInput.value = "0";
       els.writeEndpointInput.value = state.writeEndpoint;
-      els.writeSecretInput.value = "";
+      els.writeSecretInput.value = state.writeSecret;
       localStorage.removeItem(STORAGE_KEYS.source);
       localStorage.removeItem(STORAGE_KEYS.gid);
       localStorage.removeItem(STORAGE_KEYS.sheetName);
       localStorage.setItem(STORAGE_KEYS.refreshMinutes, "0");
       localStorage.setItem(STORAGE_KEYS.writeEndpoint, state.writeEndpoint);
-      localStorage.removeItem(STORAGE_KEYS.writeSecret);
+      localStorage.setItem(STORAGE_KEYS.writeSecret, state.writeSecret);
       setupAutoRefresh();
       updateAuthUi();
       updateWriteStatus();
