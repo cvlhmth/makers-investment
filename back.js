@@ -536,7 +536,7 @@ async function loadSheetPayload(input, gid, sheetName) {
   const source = buildSheetSource(input, gid, sheetName);
 
   try {
-    const response = await fetch(source.csvUrl, { cache: "no-store" });
+    const response = await fetch(withCacheBust(source.csvUrl), { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -652,7 +652,7 @@ async function loadSheetMatrix(input, gid, sheetName) {
   }
 
   const source = buildSheetSource(input, gid, sheetName);
-  const response = await fetch(source.csvUrl, { cache: "no-store" });
+  const response = await fetch(withCacheBust(source.csvUrl), { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }
@@ -1634,6 +1634,11 @@ function buildSheetSource(input, gid, sheetName) {
   return { csvUrl: trimmed, sheetId: "" };
 }
 
+function withCacheBust(url) {
+  const parsed = new URL(url);
+  parsed.searchParams.set("_", String(Date.now()));
+  return parsed.toString();
+}
 function withSheetParams(url, gid, sheetName) {
   const parsed = new URL(url);
   if (gid) {
