@@ -203,6 +203,7 @@ function makerUpdateCell_(payload) {
   const columnName = String(payload.column || "").trim();
   const value = payload.value == null ? "" : payload.value;
   const sheetName = makerResolveEditableSheetName_(payload.sheetName);
+  const anchorColumnName = String(payload.anchorColumn || MAKER_WRITE_CONFIG.ANCHOR_HEADER).trim();
 
   if (!maker || !columnName) {
     return makerJson_({ ok: false, error: "missing maker or column" });
@@ -217,7 +218,7 @@ function makerUpdateCell_(payload) {
   const values = sheet.getDataRange().getDisplayValues();
   const headerRow = makerFindHeaderRow_(values);
   const headers = values[headerRow];
-  const idCol = makerFindColumn_(headers, MAKER_WRITE_CONFIG.ANCHOR_HEADER);
+  const idCol = makerFindColumn_(headers, anchorColumnName);
   const targetCol = makerFindColumn_(headers, columnName);
 
   if (idCol < 0 || targetCol < 0) {

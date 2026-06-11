@@ -1023,7 +1023,7 @@ function inferAmber(label) {
 }
 
 function applyFiltersAndRender() {
-  const makerKey = findColumnKey(["maker"]);
+  const makerKey = findBackAnchorKey();
   const yearKey = findColumnKey(["ano", "year"]);
   const catmanKey = findCatmanKey();
   const monthKey = findColumnKey(["mes", "mês"]);
@@ -1075,7 +1075,7 @@ function applyFiltersAndRender() {
 }
 
 function syncFilterOptions() {
-  const makerKey = findColumnKey(["maker"]);
+  const makerKey = findBackAnchorKey();
   const yearKey = findColumnKey(["ano", "year"]);
   const monthKey = findColumnKey(["mes", "mês"]);
 
@@ -1339,7 +1339,7 @@ async function sendSheetUpdate(row, column, value) {
     return;
   }
 
-  const makerKey = findColumnKey(["maker"]);
+  const makerKey = findBackAnchorKey();
   const idKey = findColumnKey(["id_alianca", "id alianca"]);
   const maker = String(row[makerKey] || "").trim();
   const idAlianca = String(row[idKey] || "").trim();
@@ -1352,6 +1352,7 @@ async function sendSheetUpdate(row, column, value) {
   const payload = {
     secret: state.writeSecret,
     sheetName: "Back",
+    anchorColumn: getColumnLabelByKey(makerKey),
     maker,
     idAlianca,
     column: column.label,
@@ -1377,6 +1378,14 @@ async function sendSheetUpdate(row, column, value) {
     console.error(error);
     setWriteStatus("Falha ao enviar para o Sheets", "error");
   }
+}
+
+function findBackAnchorKey() {
+  return findColumnKey(["nome", "maker", "fornecedor", "empresa", "parceiro", "id_alianca", "id alianca", "id"]);
+}
+
+function getColumnLabelByKey(key) {
+  return state.columns.find((column) => column.key === key)?.label || "Nome";
 }
 
 function updateWriteStatus() {
@@ -1940,7 +1949,7 @@ function normalizeUrl(value) {
 }
 
 function makeRowId(row, index) {
-  const makerKey = findColumnKey(["maker"]);
+  const makerKey = findBackAnchorKey();
   const cnpjKey = findColumnKey(["cnpj"]);
   const monthKey = findColumnKey(["mes", "mês"]);
   return [row[makerKey], row[cnpjKey], row[monthKey], index].map((part) => String(part || "").trim()).join("|");
