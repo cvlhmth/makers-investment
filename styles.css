@@ -1794,7 +1794,8 @@ button:disabled,
 
 #provisionTable,
 #backProvisionTable {
-  min-width: 1180px;
+  width: 100%;
+  min-width: 0;
   table-layout: fixed;
 }
 
@@ -1802,28 +1803,36 @@ button:disabled,
 #provisionTable td,
 #backProvisionTable th,
 #backProvisionTable td {
+  padding: 8px 10px;
   white-space: nowrap;
+}
+
+#provisionTable th,
+#backProvisionTable th {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  white-space: normal;
 }
 
 #provisionTable th:nth-child(1),
 #provisionTable td:nth-child(1),
 #backProvisionTable th:nth-child(1),
 #backProvisionTable td:nth-child(1) {
-  width: 92px;
+  width: 8%;
 }
 
 #provisionTable th:nth-child(2),
 #provisionTable td:nth-child(2),
 #backProvisionTable th:nth-child(2),
 #backProvisionTable td:nth-child(2) {
-  width: 110px;
+  width: 10%;
 }
 
 #provisionTable th:nth-child(3),
 #provisionTable td:nth-child(3),
 #backProvisionTable th:nth-child(3),
 #backProvisionTable td:nth-child(3) {
-  width: 130px;
+  width: 12%;
 }
 
 #provisionTable th:nth-child(n + 4),
@@ -1837,14 +1846,14 @@ button:disabled,
 #provisionTable td:nth-child(4),
 #backProvisionTable th:nth-child(4),
 #backProvisionTable td:nth-child(4) {
-  width: 250px;
+  width: 20%;
 }
 
 #provisionTable th:nth-child(5),
 #provisionTable td:nth-child(5),
 #backProvisionTable th:nth-child(5),
 #backProvisionTable td:nth-child(5) {
-  width: 230px;
+  width: 18%;
 }
 
 #provisionTable th:nth-child(6),
@@ -1855,7 +1864,7 @@ button:disabled,
 #backProvisionTable td:nth-child(6),
 #backProvisionTable th:nth-child(7),
 #backProvisionTable td:nth-child(7) {
-  width: 190px;
+  width: 16%;
 }
 
 .provision-total-row td {
@@ -1866,7 +1875,7 @@ button:disabled,
 }
 
 .fx-input {
-  width: 104px;
+  width: 76px;
   min-height: 34px;
   border: 1px solid var(--rappi-border);
   border-radius: 8px;
