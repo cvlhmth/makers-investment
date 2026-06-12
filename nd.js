@@ -3,6 +3,7 @@ const ND_CONFIG = {
   ndHistorySource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1349527717&single=true&output=csv",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
   legacyWriteEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
+  writeSecret: "1234",
   firstNd: 358
 };
 
@@ -63,7 +64,7 @@ document.addEventListener("DOMContentLoaded", initNdPage);
 function initNdPage() {
   const savedEndpoint = localStorage.getItem(ND_STORAGE_KEYS.writeEndpoint) || "";
   ndState.writeEndpoint = !savedEndpoint || savedEndpoint === ND_CONFIG.legacyWriteEndpoint ? ND_CONFIG.writeEndpoint : savedEndpoint;
-  ndState.writeSecret = localStorage.getItem(ND_STORAGE_KEYS.writeSecret) || "";
+  ndState.writeSecret = localStorage.getItem(ND_STORAGE_KEYS.writeSecret) || ND_CONFIG.writeSecret;
   localStorage.setItem(ND_STORAGE_KEYS.writeEndpoint, ndState.writeEndpoint);
 
   ndEls.writeEndpointInput.value = ndState.writeEndpoint;

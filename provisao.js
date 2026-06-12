@@ -266,7 +266,7 @@ function createProvisionFxCell(row) {
 }
 
 function exportProvisionCsv() {
-  const rows = [["Maker"], ["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "Zerados", "Recebidos"]];
+  const rows = [["Maker"], ["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "A RECEBER", "Recebidos"]];
   provisionState.filteredRows.forEach((row) => {
     rows.push([
       row.year,
@@ -280,7 +280,7 @@ function exportProvisionCsv() {
   });
   rows.push([]);
   rows.push(["Back Margin"]);
-  rows.push(["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "Zerados", "Recebidos"]);
+  rows.push(["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "A RECEBER", "Recebidos"]);
   provisionState.filteredBackRows.forEach((row) => {
     rows.push([
       row.year,

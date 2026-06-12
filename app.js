@@ -5,7 +5,7 @@ const GOOGLE_SHEET = {
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
-  writeSecret: "",
+  writeSecret: "1234",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   filtersSheetName: "filters",
   linksSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1741032633&single=true&output=csv",
@@ -416,20 +416,20 @@ function bindEvents() {
       state.sheetName = "";
       state.refreshMinutes = 0;
       state.writeEndpoint = GOOGLE_SHEET.writeEndpoint;
-      state.writeSecret = "";
+      state.writeSecret = GOOGLE_SHEET.writeSecret;
       state.accessToken = "";
       els.sheetUrlInput.value = "";
       els.gidInput.value = "";
       els.sheetNameInput.value = "";
       els.refreshMinutesInput.value = "0";
       els.writeEndpointInput.value = state.writeEndpoint;
-      els.writeSecretInput.value = "";
+      els.writeSecretInput.value = state.writeSecret;
       localStorage.removeItem(STORAGE_KEYS.source);
       localStorage.removeItem(STORAGE_KEYS.gid);
       localStorage.removeItem(STORAGE_KEYS.sheetName);
       localStorage.setItem(STORAGE_KEYS.refreshMinutes, "0");
       localStorage.setItem(STORAGE_KEYS.writeEndpoint, state.writeEndpoint);
-      localStorage.removeItem(STORAGE_KEYS.writeSecret);
+      localStorage.setItem(STORAGE_KEYS.writeSecret, state.writeSecret);
       setupAutoRefresh();
       updateAuthUi();
       updateWriteStatus();

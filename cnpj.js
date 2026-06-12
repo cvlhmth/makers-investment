@@ -2,7 +2,8 @@ const CNPJ_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1726147303&single=true&output=csv",
   catmanSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1975482772&single=true&output=csv",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
-  writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec"
+  writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
+  writeSecret: "1234"
 };
 
 const CNPJ_LEGACY_WRITE_ENDPOINT = "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec";
@@ -47,7 +48,7 @@ document.addEventListener("DOMContentLoaded", initCnpjPage);
 
 function initCnpjPage() {
   cnpjState.writeEndpoint = localStorage.getItem(CNPJ_STORAGE_KEYS.writeEndpoint) || CNPJ_CONFIG.writeEndpoint;
-  cnpjState.writeSecret = localStorage.getItem(CNPJ_STORAGE_KEYS.writeSecret) || "";
+  cnpjState.writeSecret = localStorage.getItem(CNPJ_STORAGE_KEYS.writeSecret) || CNPJ_CONFIG.writeSecret;
   if (cnpjState.writeEndpoint === CNPJ_LEGACY_WRITE_ENDPOINT) {
     cnpjState.writeEndpoint = CNPJ_CONFIG.writeEndpoint;
     localStorage.setItem(CNPJ_STORAGE_KEYS.writeEndpoint, cnpjState.writeEndpoint);
