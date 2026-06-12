@@ -1794,7 +1794,8 @@ button:disabled,
 
 #provisionTable,
 #backProvisionTable {
-  min-width: 980px;
+  min-width: 1180px;
+  table-layout: fixed;
 }
 
 #provisionTable th,
@@ -1823,6 +1824,38 @@ button:disabled,
 #backProvisionTable th:nth-child(3),
 #backProvisionTable td:nth-child(3) {
   width: 130px;
+}
+
+#provisionTable th:nth-child(n + 4),
+#provisionTable td:nth-child(n + 4),
+#backProvisionTable th:nth-child(n + 4),
+#backProvisionTable td:nth-child(n + 4) {
+  text-align: right;
+}
+
+#provisionTable th:nth-child(4),
+#provisionTable td:nth-child(4),
+#backProvisionTable th:nth-child(4),
+#backProvisionTable td:nth-child(4) {
+  width: 250px;
+}
+
+#provisionTable th:nth-child(5),
+#provisionTable td:nth-child(5),
+#backProvisionTable th:nth-child(5),
+#backProvisionTable td:nth-child(5) {
+  width: 230px;
+}
+
+#provisionTable th:nth-child(6),
+#provisionTable td:nth-child(6),
+#provisionTable th:nth-child(7),
+#provisionTable td:nth-child(7),
+#backProvisionTable th:nth-child(6),
+#backProvisionTable td:nth-child(6),
+#backProvisionTable th:nth-child(7),
+#backProvisionTable td:nth-child(7) {
+  width: 190px;
 }
 
 .provision-total-row td {

@@ -175,10 +175,11 @@ function applyProvisionFiltersAndRender() {
 
 function renderProvisionMetrics() {
   const rows = provisionState.filteredRows;
+  const combinedRows = [...provisionState.filteredRows, ...provisionState.filteredBackRows];
   provisionEls.metricMonths.textContent = String(rows.length);
-  provisionEls.metricExecution.textContent = formatProvisionCurrency(sumProvision(rows, "execution"), "BRL");
-  provisionEls.metricZero.textContent = formatProvisionCurrency(sumProvision(rows, "zero"), "BRL");
-  provisionEls.metricReceived.textContent = formatProvisionCurrency(sumProvision(rows, "received"), "BRL");
+  provisionEls.metricExecution.textContent = formatProvisionCurrency(sumProvision(combinedRows, "execution"), "BRL");
+  provisionEls.metricZero.textContent = formatProvisionCurrency(sumProvision(combinedRows, "zero"), "BRL");
+  provisionEls.metricReceived.textContent = formatProvisionCurrency(sumProvision(combinedRows, "received"), "BRL");
 }
 
 function renderProvisionTable(tableBody, rows, emptyState, rowCount) {
