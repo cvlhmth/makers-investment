@@ -4,7 +4,7 @@ const GOOGLE_SHEET = {
   sheetName: "",
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
-  writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
+  writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
   writeSecret: "1234",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   filtersSheetName: "filters",
@@ -13,7 +13,7 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "back-published-csv-v3";
+const CONFIG_VERSION = "back-maker-shared-write-v4";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.back.configVersion",
@@ -899,6 +899,7 @@ function normalizeRow(row, index) {
   state.columns.forEach((column) => {
     normalized[column.key] = row[column.original] ?? row[column.key] ?? "";
   });
+  normalized.__rowNumber = index + 2;
   normalized.__id = makeRowId(normalized, index);
   return applyLocalEdits(normalized);
 }
@@ -1356,6 +1357,7 @@ async function sendSheetUpdate(row, column, value) {
     secret: state.writeSecret,
     sheetName: "Back",
     anchorColumn: getColumnLabelByKey(makerKey),
+    rowNumber: row.__rowNumber,
     maker,
     idAlianca,
     column: column.label,

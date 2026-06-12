@@ -15,6 +15,7 @@ const GOOGLE_SHEET = {
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 const CONFIG_VERSION = "maker-write-endpoint-v9";
 const LEGACY_WRITE_ENDPOINT = "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec";
+const AUTOSAVE_DELAY_MS = 700;
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.configVersion",
@@ -1312,7 +1313,15 @@ function renderEditableCell(row, column) {
   input.className = "note-input";
   input.value = column.type === "currency" ? formatAmount(parseFlexibleNumber(value)) : value;
   input.type = normalized === "valor final" ? "text" : "text";
+  let autosaveTimer = 0;
+  input.addEventListener("input", () => {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(() => {
+      updateLocalEdit(row, column, input.value);
+    }, AUTOSAVE_DELAY_MS);
+  });
   input.addEventListener("change", () => {
+    window.clearTimeout(autosaveTimer);
     const nextValue = column.type === "currency" ? formatAmount(parseFlexibleNumber(input.value)) : input.value;
     input.value = nextValue;
     updateLocalEdit(row, column, nextValue);
