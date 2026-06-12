@@ -251,7 +251,7 @@ const state = {
     search: "",
     maker: "",
     month: "",
-    year: "",
+    monthEnd: "",
     catman: "",
     status: "",
     statusCatman: "",
@@ -294,7 +294,7 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   makerFilter: document.querySelector("#makerFilter"),
   monthFilter: document.querySelector("#monthFilter"),
-  yearFilter: document.querySelector("#yearFilter"),
+  monthEndFilter: document.querySelector("#monthEndFilter"),
   catmanFilter: document.querySelector("#catmanFilter"),
   statusFilter: document.querySelector("#statusFilter"),
   statusCatmanFilter: document.querySelector("#statusCatmanFilter"),
@@ -451,9 +451,8 @@ function bindEvents() {
     state.filters.month = els.monthFilter.value;
     applyFiltersAndRender();
   });
-
-  els.yearFilter.addEventListener("change", () => {
-    state.filters.year = els.yearFilter.value;
+  els.monthEndFilter.addEventListener("change", () => {
+    state.filters.monthEnd = els.monthEndFilter.value;
     applyFiltersAndRender();
   });
 
@@ -483,11 +482,11 @@ function bindEvents() {
   });
 
   els.clearFiltersButton.addEventListener("click", () => {
-    state.filters = { search: "", maker: "", month: "", year: "", catman: "", status: "", statusCatman: "", statusNd: "", payment: "", quick: "" };
+    state.filters = { search: "", maker: "", month: "", monthEnd: "", catman: "", status: "", statusCatman: "", statusNd: "", payment: "", quick: "" };
     els.searchInput.value = "";
     els.makerFilter.value = "";
     els.monthFilter.value = "";
-    els.yearFilter.value = "";
+    els.monthEndFilter.value = "";
     els.catmanFilter.value = "";
     els.statusFilter.value = "";
     els.statusCatmanFilter.value = "";
@@ -1048,8 +1047,7 @@ function applyFiltersAndRender() {
     }
 
     if (state.filters.maker && String(row[makerKey] || "") !== state.filters.maker) return false;
-    if (state.filters.month && String(row[monthKey] || "") !== state.filters.month) return false;
-    if (state.filters.year && String(row[yearKey] || "") !== state.filters.year) return false;
+    if (!isPeriodInSelectedRange(row[yearKey], row[monthKey], state.filters.month, state.filters.monthEnd)) return false;
     if (state.filters.catman && String(row[catmanKey] || "") !== state.filters.catman) return false;
     if (state.filters.status && normalizeStatusFpaValue(row[statusFpaKey]) !== state.filters.status) return false;
     if (state.filters.statusCatman && normalizeCatmanStatusValue(row[statusCatmanKey]) !== state.filters.statusCatman) return false;
@@ -1089,8 +1087,7 @@ function syncFilterOptions() {
   const monthKey = findColumnKey(["mes", "mês"]);
 
   fillSelect(els.makerFilter, "Todos", uniqueSorted(state.rows.map((row) => row[makerKey]).filter(Boolean)), toTitleCase);
-  fillSelect(els.monthFilter, "Todos", uniqueSorted(state.rows.map((row) => row[monthKey]).filter(Boolean)));
-  fillSelect(els.yearFilter, "Todos", uniqueSorted(state.rows.map((row) => row[yearKey]).filter(Boolean)));
+  syncPeriodBounds(els.monthFilter, els.monthEndFilter, state.rows, yearKey, monthKey);
   fillSelect(els.catmanFilter, "Todos", getCatmanOptions(), toTitleCase);
   fillSelect(els.statusFilter, "All", STATUS_FPA_OPTIONS, toDisplayCase);
   fillSelect(els.statusCatmanFilter, "Todos", STATUS_CATMAN_OPTIONS.filter(Boolean), toDisplayCase);
@@ -1789,6 +1786,54 @@ function findStatusNdKey() {
 
 function findPaymentValueKey() {
   return findColumnKey(["valor_pagamento", "valor pagamento", "valor pgto", "pagamento", "execucao", "execu\\u00e7\\u00e3o"]);
+}
+
+function isPeriodInSelectedRange(yearValue, monthValue, startValue, endValue) {
+  const period = getPeriodIndex(yearValue, monthValue);
+  const start = parseMonthInputIndex(startValue);
+  const end = parseMonthInputIndex(endValue);
+
+  if (!start && !end) return true;
+  if (!period) return false;
+
+  if (start && !end) return period >= start;
+  if (!start && end) return period <= end;
+
+  return period >= Math.min(start, end) && period <= Math.max(start, end);
+}
+
+function syncPeriodBounds(startInput, endInput, rows, yearKey, monthKey) {
+  if (!startInput || !endInput) return;
+  const periods = rows
+    .map((row) => getPeriodValue(row[yearKey], row[monthKey]))
+    .filter(Boolean)
+    .sort();
+
+  const min = periods[0] || "";
+  const max = periods.at(-1) || "";
+  [startInput, endInput].forEach((input) => {
+    input.min = min;
+    input.max = max;
+  });
+}
+
+function getPeriodValue(yearValue, monthValue) {
+  const year = Number(String(yearValue || "").replace(/[^\d]/g, ""));
+  const month = Number(String(monthValue || "").replace(/[^\d]/g, ""));
+  if (!year || month < 1 || month > 12) return "";
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function getPeriodIndex(yearValue, monthValue) {
+  return parseMonthInputIndex(getPeriodValue(yearValue, monthValue));
+}
+
+function parseMonthInputIndex(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return 0;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  return year * 12 + month;
 }
 
 function sumByKey(rows, key) {

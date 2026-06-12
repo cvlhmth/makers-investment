@@ -86,18 +86,13 @@
         <section class="workbench provision-workbench">
           <div class="toolbar">
             <label>
-              <span>Ano</span>
-              <select id="provisionYearFilter"></select>
+              <span>De</span>
+              <input id="provisionPeriodStartFilter" type="month" />
             </label>
 
             <label>
-              <span>Mês inicial</span>
-              <select id="provisionMonthStartFilter"></select>
-            </label>
-
-            <label>
-              <span>Mês final</span>
-              <select id="provisionMonthEndFilter"></select>
+              <span>Até</span>
+              <input id="provisionPeriodEndFilter" type="month" />
             </label>
 
             <button class="ghost-button" id="provisionClearFiltersButton" type="button">Limpar</button>
@@ -169,6 +164,6 @@
       </main>
     </div>
 
-    <script src="./provisao.js?v=20260612-provision-back-margin-total-v2"></script>
+    <script src="./provisao.js?v=20260612-period-filter-v3"></script>
   </body>
 </html>

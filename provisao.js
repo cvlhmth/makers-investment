@@ -16,7 +16,8 @@ const provisionState = {
   filteredRows: [],
   filteredBackRows: [],
   filters: {
-    year: ""
+    periodStart: "",
+    periodEnd: ""
   }
 };
 
@@ -24,7 +25,8 @@ const provisionEls = {
   connectionStatus: document.querySelector("#provisionConnectionStatus"),
   refreshButton: document.querySelector("#provisionRefreshButton"),
   exportButton: document.querySelector("#provisionExportButton"),
-  yearFilter: document.querySelector("#provisionYearFilter"),
+  periodStartFilter: document.querySelector("#provisionPeriodStartFilter"),
+  periodEndFilter: document.querySelector("#provisionPeriodEndFilter"),
   clearFiltersButton: document.querySelector("#provisionClearFiltersButton"),
   metricMonths: document.querySelector("#provisionMetricMonths"),
   metricExecution: document.querySelector("#provisionMetricExecution"),
@@ -44,13 +46,19 @@ document.addEventListener("DOMContentLoaded", initProvisionPage);
 function initProvisionPage() {
   provisionEls.refreshButton.addEventListener("click", loadProvisionData);
   provisionEls.exportButton.addEventListener("click", exportProvisionCsv);
-  provisionEls.yearFilter.addEventListener("change", () => {
-    provisionState.filters.year = provisionEls.yearFilter.value;
+  provisionEls.periodStartFilter.addEventListener("change", () => {
+    provisionState.filters.periodStart = provisionEls.periodStartFilter.value;
+    applyProvisionFiltersAndRender();
+  });
+  provisionEls.periodEndFilter.addEventListener("change", () => {
+    provisionState.filters.periodEnd = provisionEls.periodEndFilter.value;
     applyProvisionFiltersAndRender();
   });
   provisionEls.clearFiltersButton.addEventListener("click", () => {
-    provisionState.filters.year = "";
-    provisionEls.yearFilter.value = "";
+    provisionState.filters.periodStart = "";
+    provisionState.filters.periodEnd = "";
+    provisionEls.periodStartFilter.value = "";
+    provisionEls.periodEndFilter.value = "";
     applyProvisionFiltersAndRender();
   });
 
@@ -144,27 +152,24 @@ function buildProvisionMonthlyRows(rows, sourceKey = "maker") {
 }
 
 function syncProvisionFilters() {
-  const years = uniqueProvisionValues([
+  const periods = [
     ...provisionState.monthlyRows,
     ...provisionState.backMonthlyRows
-  ].map((row) => row.year).filter(Boolean));
-  const currentValue = provisionEls.yearFilter.value;
-  provisionEls.yearFilter.innerHTML = "";
-  provisionEls.yearFilter.append(new Option("Todos", ""));
-  years.forEach((year) => provisionEls.yearFilter.append(new Option(year, year)));
-  if (years.includes(currentValue)) {
-    provisionEls.yearFilter.value = currentValue;
-  }
+  ].map((row) => getProvisionPeriodValue(row.year, row.month)).filter(Boolean).sort();
+  const min = periods[0] || "";
+  const max = periods.at(-1) || "";
+  [provisionEls.periodStartFilter, provisionEls.periodEndFilter].forEach((input) => {
+    input.min = min;
+    input.max = max;
+  });
 }
 
 function applyProvisionFiltersAndRender() {
   let rows = provisionState.monthlyRows;
   let backRows = provisionState.backMonthlyRows;
 
-  if (provisionState.filters.year) {
-    rows = rows.filter((row) => row.year === provisionState.filters.year);
-    backRows = backRows.filter((row) => row.year === provisionState.filters.year);
-  }
+  rows = rows.filter((row) => isProvisionPeriodInRange(row, provisionState.filters.periodStart, provisionState.filters.periodEnd));
+  backRows = backRows.filter((row) => isProvisionPeriodInRange(row, provisionState.filters.periodStart, provisionState.filters.periodEnd));
 
   provisionState.filteredRows = rows;
   provisionState.filteredBackRows = backRows;
@@ -413,6 +418,33 @@ function getProvisionFx(key) {
   const stored = localStorage.getItem(PROVISION_STORAGE_KEYS.fxPrefix + key);
   const parsed = parseProvisionNumber(stored);
   return parsed > 0 ? parsed : PROVISION_CONFIG.defaultFx;
+}
+
+function isProvisionPeriodInRange(row, startValue, endValue) {
+  const period = parseProvisionPeriodIndex(getProvisionPeriodValue(row.year, row.month));
+  const start = parseProvisionPeriodIndex(startValue);
+  const end = parseProvisionPeriodIndex(endValue);
+
+  if (!start && !end) return true;
+  if (!period) return false;
+
+  if (start && !end) return period >= start;
+  if (!start && end) return period <= end;
+
+  return period >= Math.min(start, end) && period <= Math.max(start, end);
+}
+
+function getProvisionPeriodValue(yearValue, monthValue) {
+  const year = Number(String(yearValue || "").replace(/[^\d]/g, ""));
+  const month = Number(String(monthValue || "").replace(/[^\d]/g, ""));
+  if (!year || month < 1 || month > 12) return "";
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function parseProvisionPeriodIndex(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return 0;
+  return Number(match[1]) * 12 + Number(match[2]);
 }
 
 function parseProvisionNumber(value) {
