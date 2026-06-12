@@ -1,5 +1,6 @@
 const PROVISION_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1726147303&single=true&output=csv",
+  backSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=567184749&single=true&output=csv",
   defaultFx: 5
 };
 
@@ -9,8 +10,11 @@ const PROVISION_STORAGE_KEYS = {
 
 const provisionState = {
   rows: [],
+  backRows: [],
   monthlyRows: [],
+  backMonthlyRows: [],
   filteredRows: [],
+  filteredBackRows: [],
   filters: {
     year: ""
   }
@@ -27,8 +31,11 @@ const provisionEls = {
   metricZero: document.querySelector("#provisionMetricZero"),
   metricReceived: document.querySelector("#provisionMetricReceived"),
   tableBody: document.querySelector("#provisionTableBody"),
+  backTableBody: document.querySelector("#backProvisionTableBody"),
   emptyState: document.querySelector("#provisionEmptyState"),
+  backEmptyState: document.querySelector("#backProvisionEmptyState"),
   rowCount: document.querySelector("#provisionRowCount"),
+  backRowCount: document.querySelector("#backProvisionRowCount"),
   fxStatus: document.querySelector("#provisionFxStatus")
 };
 
@@ -51,25 +58,32 @@ function initProvisionPage() {
 }
 
 async function loadProvisionData() {
-  setProvisionConnectionStatus("Carregando base Maker...");
+  setProvisionConnectionStatus("Carregando bases Maker e Back Margin...");
 
   try {
-    const payload = await loadProvisionCsvObjects(PROVISION_CONFIG.makerSource);
-    provisionState.rows = payload.rows;
-    provisionState.monthlyRows = buildProvisionMonthlyRows(payload.rows);
+    const [makerPayload, backPayload] = await Promise.all([
+      loadProvisionCsvObjects(PROVISION_CONFIG.makerSource),
+      loadProvisionCsvObjects(PROVISION_CONFIG.backSource)
+    ]);
+    provisionState.rows = makerPayload.rows;
+    provisionState.backRows = backPayload.rows;
+    provisionState.monthlyRows = buildProvisionMonthlyRows(makerPayload.rows, "maker");
+    provisionState.backMonthlyRows = buildProvisionMonthlyRows(backPayload.rows, "back");
     syncProvisionFilters();
     applyProvisionFiltersAndRender();
-    setProvisionConnectionStatus(`Conectado ao Google Sheets, ${payload.rows.length} registros Maker`);
+    setProvisionConnectionStatus(`Conectado ao Google Sheets, ${makerPayload.rows.length} registros Maker e ${backPayload.rows.length} registros Back Margin`);
   } catch (error) {
     console.error(error);
     provisionState.rows = [];
+    provisionState.backRows = [];
     provisionState.monthlyRows = [];
+    provisionState.backMonthlyRows = [];
     applyProvisionFiltersAndRender();
-    setProvisionConnectionStatus("Falha ao carregar a base Maker");
+    setProvisionConnectionStatus("Falha ao carregar as bases Maker e Back Margin");
   }
 }
 
-function buildProvisionMonthlyRows(rows) {
+function buildProvisionMonthlyRows(rows, sourceKey = "maker") {
   const buckets = new Map();
 
   rows.forEach((row) => {
@@ -80,7 +94,10 @@ function buildProvisionMonthlyRows(rows) {
       "valor_emissao_nd",
       "valor emissão nd",
       "valor query",
-      "vlr query"
+      "vlr query",
+      "valor_pagamento",
+      "valor pagamento",
+      "pagamento"
     ]));
     const payment = parseProvisionNumber(getFirstProvisionValue(row, [
       "valor_pagamento",
@@ -98,6 +115,7 @@ function buildProvisionMonthlyRows(rows) {
     if (!buckets.has(key)) {
       buckets.set(key, {
         key,
+        fxKey: sourceKey === "back" ? `back-${key}` : key,
         year: normalizedYear,
         month: normalizedMonth,
         execution: 0,
@@ -119,14 +137,17 @@ function buildProvisionMonthlyRows(rows) {
   return [...buckets.values()]
     .map((row) => ({
       ...row,
-      fx: getProvisionFx(row.key),
-      usd: getProvisionFx(row.key) > 0 ? row.execution / getProvisionFx(row.key) : 0
+      fx: getProvisionFx(row.fxKey),
+      usd: getProvisionFx(row.fxKey) > 0 ? row.execution / getProvisionFx(row.fxKey) : 0
     }))
     .sort((a, b) => Number(a.year) - Number(b.year) || Number(a.month) - Number(b.month));
 }
 
 function syncProvisionFilters() {
-  const years = uniqueProvisionValues(provisionState.monthlyRows.map((row) => row.year).filter(Boolean));
+  const years = uniqueProvisionValues([
+    ...provisionState.monthlyRows,
+    ...provisionState.backMonthlyRows
+  ].map((row) => row.year).filter(Boolean));
   const currentValue = provisionEls.yearFilter.value;
   provisionEls.yearFilter.innerHTML = "";
   provisionEls.yearFilter.append(new Option("Todos", ""));
@@ -138,14 +159,18 @@ function syncProvisionFilters() {
 
 function applyProvisionFiltersAndRender() {
   let rows = provisionState.monthlyRows;
+  let backRows = provisionState.backMonthlyRows;
 
   if (provisionState.filters.year) {
     rows = rows.filter((row) => row.year === provisionState.filters.year);
+    backRows = backRows.filter((row) => row.year === provisionState.filters.year);
   }
 
   provisionState.filteredRows = rows;
+  provisionState.filteredBackRows = backRows;
   renderProvisionMetrics();
-  renderProvisionTable();
+  renderProvisionTable(provisionEls.tableBody, provisionState.filteredRows, provisionEls.emptyState, provisionEls.rowCount);
+  renderProvisionTable(provisionEls.backTableBody, provisionState.filteredBackRows, provisionEls.backEmptyState, provisionEls.backRowCount);
 }
 
 function renderProvisionMetrics() {
@@ -156,11 +181,11 @@ function renderProvisionMetrics() {
   provisionEls.metricReceived.textContent = formatProvisionCurrency(sumProvision(rows, "received"), "BRL");
 }
 
-function renderProvisionTable() {
+function renderProvisionTable(tableBody, rows, emptyState, rowCount) {
   const fragment = document.createDocumentFragment();
-  provisionEls.tableBody.innerHTML = "";
+  tableBody.innerHTML = "";
 
-  provisionState.filteredRows.forEach((row) => {
+  rows.forEach((row) => {
     const tr = document.createElement("tr");
     tr.append(
       createProvisionCell(row.year, "cell-number"),
@@ -174,9 +199,28 @@ function renderProvisionTable() {
     fragment.append(tr);
   });
 
-  provisionEls.tableBody.append(fragment);
-  provisionEls.emptyState.hidden = provisionState.filteredRows.length > 0;
-  provisionEls.rowCount.textContent = `${provisionState.filteredRows.length} meses`;
+  if (rows.length) {
+    fragment.append(createProvisionTotalRow(rows));
+  }
+
+  tableBody.append(fragment);
+  emptyState.hidden = rows.length > 0;
+  rowCount.textContent = `${rows.length} meses`;
+}
+
+function createProvisionTotalRow(rows) {
+  const tr = document.createElement("tr");
+  tr.className = "provision-total-row";
+  tr.append(
+    createProvisionCell("Total"),
+    createProvisionCell(""),
+    createProvisionCell(""),
+    createProvisionCell(formatProvisionCurrency(sumProvision(rows, "execution"), "BRL"), "cell-currency"),
+    createProvisionCell(formatProvisionCurrency(sumProvision(rows, "usd"), "USD"), "cell-currency"),
+    createProvisionCell(formatProvisionCurrency(sumProvision(rows, "zero"), "BRL"), "cell-currency"),
+    createProvisionCell(formatProvisionCurrency(sumProvision(rows, "received"), "BRL"), "cell-currency")
+  );
+  return tr;
 }
 
 function createProvisionCell(value, className = "") {
@@ -197,15 +241,17 @@ function createProvisionFxCell(row) {
   input.value = String(row.fx || "");
   input.addEventListener("change", () => {
     const nextFx = Math.max(0, parseProvisionNumber(input.value));
-    localStorage.setItem(PROVISION_STORAGE_KEYS.fxPrefix + row.key, String(nextFx || ""));
-    provisionState.monthlyRows = provisionState.monthlyRows.map((item) => {
-      if (item.key !== row.key) return item;
+    localStorage.setItem(PROVISION_STORAGE_KEYS.fxPrefix + row.fxKey, String(nextFx || ""));
+    const updateFxRow = (item) => {
+      if (item.fxKey !== row.fxKey) return item;
       return {
         ...item,
         fx: nextFx,
         usd: nextFx > 0 ? item.execution / nextFx : 0
       };
-    });
+    };
+    provisionState.monthlyRows = provisionState.monthlyRows.map(updateFxRow);
+    provisionState.backMonthlyRows = provisionState.backMonthlyRows.map(updateFxRow);
     provisionEls.fxStatus.textContent = `FX salvo para ${getProvisionMonthLabel(row.month)}/${row.year}`;
     applyProvisionFiltersAndRender();
   });
@@ -214,8 +260,22 @@ function createProvisionFxCell(row) {
 }
 
 function exportProvisionCsv() {
-  const rows = [["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "Zerados", "Recebidos"]];
+  const rows = [["Maker"], ["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "Zerados", "Recebidos"]];
   provisionState.filteredRows.forEach((row) => {
+    rows.push([
+      row.year,
+      row.month,
+      row.fx,
+      row.execution,
+      row.usd,
+      row.zero,
+      row.received
+    ]);
+  });
+  rows.push([]);
+  rows.push(["Back Margin"]);
+  rows.push(["Ano", "Mes", "FX", "Valor Execucao", "Valor USD", "Zerados", "Recebidos"]);
+  provisionState.filteredBackRows.forEach((row) => {
     rows.push([
       row.year,
       row.month,
