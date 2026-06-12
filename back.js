@@ -249,6 +249,7 @@ const state = {
     search: "",
     maker: "",
     month: "",
+    monthEnd: "",
     year: "",
     catman: "",
     status: "",
@@ -292,6 +293,7 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   makerFilter: document.querySelector("#makerFilter"),
   monthFilter: document.querySelector("#monthFilter"),
+  monthEndFilter: document.querySelector("#monthEndFilter"),
   yearFilter: document.querySelector("#yearFilter"),
   catmanFilter: document.querySelector("#catmanFilter"),
   statusFilter: document.querySelector("#statusFilter"),
@@ -445,6 +447,10 @@ function bindEvents() {
     state.filters.month = els.monthFilter.value;
     applyFiltersAndRender();
   });
+  els.monthEndFilter.addEventListener("change", () => {
+    state.filters.monthEnd = els.monthEndFilter.value;
+    applyFiltersAndRender();
+  });
 
   els.yearFilter.addEventListener("change", () => {
     state.filters.year = els.yearFilter.value;
@@ -477,10 +483,11 @@ function bindEvents() {
   });
 
   els.clearFiltersButton.addEventListener("click", () => {
-    state.filters = { search: "", maker: "", month: "", year: "", catman: "", status: "", statusCatman: "", statusNd: "", payment: "", quick: "" };
+    state.filters = { search: "", maker: "", month: "", monthEnd: "", year: "", catman: "", status: "", statusCatman: "", statusNd: "", payment: "", quick: "" };
     els.searchInput.value = "";
     els.makerFilter.value = "";
     els.monthFilter.value = "";
+    els.monthEndFilter.value = "";
     els.yearFilter.value = "";
     els.catmanFilter.value = "";
     els.statusFilter.value = "";
@@ -1043,7 +1050,7 @@ function applyFiltersAndRender() {
     }
 
     if (state.filters.maker && String(row[makerKey] || "") !== state.filters.maker) return false;
-    if (state.filters.month && String(row[monthKey] || "") !== state.filters.month) return false;
+    if (!isMonthInSelectedRange(row[monthKey], state.filters.month, state.filters.monthEnd)) return false;
     if (state.filters.year && String(row[yearKey] || "") !== state.filters.year) return false;
     if (state.filters.catman && String(row[catmanKey] || "") !== state.filters.catman) return false;
     if (state.filters.status && normalizeStatusFpaValue(row[statusFpaKey]) !== state.filters.status) return false;
@@ -1084,7 +1091,9 @@ function syncFilterOptions() {
   const monthKey = findColumnKey(["mes", "mês"]);
 
   fillSelect(els.makerFilter, "Todos", uniqueSorted(state.rows.map((row) => row[makerKey]).filter(Boolean)), toTitleCase);
-  fillSelect(els.monthFilter, "Todos", uniqueSorted(state.rows.map((row) => row[monthKey]).filter(Boolean)));
+  const months = uniqueSorted(state.rows.map((row) => row[monthKey]).filter(Boolean));
+  fillSelect(els.monthFilter, "Todos", months);
+  fillSelect(els.monthEndFilter, "Todos", months);
   fillSelect(els.yearFilter, "Todos", uniqueSorted(state.rows.map((row) => row[yearKey]).filter(Boolean)));
   fillSelect(els.catmanFilter, "Todos", getCatmanOptions(), toTitleCase);
   fillSelect(els.statusFilter, "All", STATUS_FPA_OPTIONS, toDisplayCase);
@@ -1455,6 +1464,24 @@ function getQuickStatusBucket(value) {
 
 function getPaymentStatusBucket(value) {
   return parseFlexibleNumber(value) > 0 ? "Pago" : "Pendente";
+}
+
+function isMonthInSelectedRange(value, startValue, endValue) {
+  const month = parseCalendarMonth(value);
+  const start = parseCalendarMonth(startValue);
+  const end = parseCalendarMonth(endValue);
+
+  if (!start && !end) return true;
+  if (!month) return false;
+
+  const min = start || end;
+  const max = end || start;
+  return month >= Math.min(min, max) && month <= Math.max(min, max);
+}
+
+function parseCalendarMonth(value) {
+  const month = Number(String(value || "").replace(/[^\d]/g, ""));
+  return month >= 1 && month <= 12 ? month : 0;
 }
 
 function getCellClass(column, value) {
