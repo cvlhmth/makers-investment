@@ -4,7 +4,7 @@ const GOOGLE_SHEET = {
   sheetName: "Maker",
   refreshMinutes: 0,
   clientId: "1090675917747-smvgs24cgi6n5qt6sv816khti52fvjsj.apps.googleusercontent.com",
-  writeEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
+  writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
   writeSecret: "",
   filtersSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1292236262&single=true&output=csv",
   filtersSheetName: "filters",
@@ -13,7 +13,8 @@ const GOOGLE_SHEET = {
 };
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
-const CONFIG_VERSION = "maker-links-source-v8";
+const CONFIG_VERSION = "maker-write-endpoint-v9";
+const LEGACY_WRITE_ENDPOINT = "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec";
 
 const STORAGE_KEYS = {
   configVersion: "sheets-dashboard.configVersion",
@@ -319,6 +320,10 @@ function init() {
   state.clientId = shouldUseDefaultConfig ? GOOGLE_SHEET.clientId : localStorage.getItem(STORAGE_KEYS.clientId) || GOOGLE_SHEET.clientId || "";
   state.writeEndpoint = shouldUseDefaultConfig ? GOOGLE_SHEET.writeEndpoint : localStorage.getItem(STORAGE_KEYS.writeEndpoint) || GOOGLE_SHEET.writeEndpoint || "";
   state.writeSecret = localStorage.getItem(STORAGE_KEYS.writeSecret) || GOOGLE_SHEET.writeSecret || "";
+  if (state.writeEndpoint === LEGACY_WRITE_ENDPOINT) {
+    state.writeEndpoint = GOOGLE_SHEET.writeEndpoint;
+    localStorage.setItem(STORAGE_KEYS.writeEndpoint, state.writeEndpoint);
+  }
   state.edits = readJson(STORAGE_KEYS.edits, {});
 
   if (shouldUseDefaultConfig) {
@@ -1356,7 +1361,7 @@ async function sendSheetUpdate(row, column, value) {
     secret: state.writeSecret,
     maker,
     idAlianca,
-    column: column.label,
+    column: getSheetWriteColumnName(column),
     value
   };
 
@@ -1379,6 +1384,12 @@ async function sendSheetUpdate(row, column, value) {
     console.error(error);
     setWriteStatus("Falha ao enviar para o Sheets", "error");
   }
+}
+
+function getSheetWriteColumnName(column) {
+  const normalized = normalizeHeader(column.label);
+  if (normalized === "pagamento") return "VALOR_PAGAMENTO";
+  return column.label;
 }
 
 function updateWriteStatus() {
