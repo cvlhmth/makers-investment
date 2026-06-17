@@ -72,6 +72,20 @@ const ND_WEB_HEADERS = [
 ];
 
 function ndWebDoGet() {
+  const params = arguments[0] && arguments[0].parameter ? arguments[0].parameter : {};
+  if (params.action === "nd_data") {
+    try {
+      ndWebAssertSecret_(params.secret);
+      return ndWebJson_(ndWebGetSourceData_());
+    } catch (error) {
+      return ndWebJson_({
+        ok: false,
+        error: String(error && error.message ? error.message : error),
+        version: ND_WEB_SCRIPT_VERSION
+      });
+    }
+  }
+
   return ndWebJson_({
     ok: true,
     app: "Makers Investment ND Web App",
@@ -238,6 +252,63 @@ function ndWebCreateNds_(rows) {
     errors,
     version: ND_WEB_SCRIPT_VERSION
   };
+}
+
+function ndWebGetSourceData_() {
+  const ss = SpreadsheetApp.openById(ND_WEB_MAKER_SPREADSHEET_ID);
+  const makerSheet = ss.getSheetByName("Maker");
+  const backSheet = ss.getSheetByName("Back");
+  const ndSheet = ndWebGetSheetByGid_(ss, ND_WEB_ND_SHEET_GID) || ss.getSheetByName(ND_WEB_ND_SHEET_FALLBACK_NAME);
+
+  if (!makerSheet) throw new Error("Aba Maker nao encontrada.");
+  if (!backSheet) throw new Error("Aba Back nao encontrada.");
+
+  const makerPayload = ndWebSheetToObjects_(makerSheet);
+  const backPayload = ndWebSheetToObjects_(backSheet);
+  const ndPayload = ndSheet ? ndWebSheetToObjects_(ndSheet) : { columns: [], rows: [] };
+
+  return {
+    ok: true,
+    makerColumns: makerPayload.columns,
+    makerRows: makerPayload.rows,
+    backColumns: backPayload.columns,
+    backRows: backPayload.rows,
+    ndColumns: ndPayload.columns,
+    ndRows: ndPayload.rows,
+    version: ND_WEB_SCRIPT_VERSION
+  };
+}
+
+function ndWebSheetToObjects_(sheet) {
+  const values = sheet.getDataRange().getDisplayValues();
+  if (!values.length) return { columns: [], rows: [] };
+
+  const headerRow = ndWebFindHeaderRowInMatrix_(values);
+  const headers = values[headerRow].map(String);
+  const rows = [];
+
+  for (let rowIndex = headerRow + 1; rowIndex < values.length; rowIndex += 1) {
+    const line = values[rowIndex];
+    if (!line.some((value) => String(value || "").trim())) continue;
+
+    const row = {};
+    headers.forEach((header, index) => {
+      if (String(header || "").trim()) row[header] = line[index] || "";
+    });
+    rows.push(row);
+  }
+
+  return { columns: headers.filter(String), rows };
+}
+
+function ndWebFindHeaderRowInMatrix_(values) {
+  const preferred = ["maker", "nome", "cnpj", "status catman", "status_nd", "n_nd"];
+  for (let index = 0; index < Math.min(values.length, 10); index += 1) {
+    const normalized = values[index].map(ndWebNormalizeHeader_);
+    const matches = preferred.filter((header) => normalized.indexOf(header) >= 0).length;
+    if (matches >= 2) return index;
+  }
+  return 0;
 }
 
 function ndWebBuildLegacyPdfRow_(input, nNd, info) {
