@@ -127,14 +127,7 @@ async function loadNdData() {
   setNdHistoryStatus("Carregando historico...", "saving");
 
   try {
-    const [makerPayload, backPayload, historyPayload] = await Promise.all([
-      loadCsvObjects(ND_CONFIG.makerSource),
-      loadCsvObjects(ND_CONFIG.backSource),
-      loadCsvObjects(ND_CONFIG.ndHistorySource).catch((error) => {
-        console.warn("Nao foi possivel carregar o historico de NDs.", error);
-        return { columns: [], rows: [] };
-      })
-    ]);
+    const { makerPayload, backPayload, historyPayload } = await loadNdSources();
 
     ndState.sourceRows = makerPayload.rows.concat(backPayload.rows);
     ndState.historyRows = historyPayload.rows;
@@ -151,11 +144,55 @@ async function loadNdData() {
     setNdHistoryStatus(`${historyPayload.rows.length} registros no historico`, "ok");
   } catch (error) {
     console.error(error);
-    setNdConnectionStatus("Falha ao carregar a base Maker");
+    setNdConnectionStatus(`Falha ao carregar bases Maker/Back/ND: ${error.message || "erro desconhecido"}`);
     setNdHistoryStatus("Historico nao carregado", "error");
     ndState.records = [];
     applyNdFiltersAndRender();
   }
+}
+
+async function loadNdSources() {
+  try {
+    const [makerPayload, backPayload, historyPayload] = await Promise.all([
+      loadCsvObjects(ND_CONFIG.makerSource),
+      loadCsvObjects(ND_CONFIG.backSource),
+      loadCsvObjects(ND_CONFIG.ndHistorySource).catch((error) => {
+        console.warn("Nao foi possivel carregar o historico de NDs via CSV.", error);
+        return { columns: [], rows: [] };
+      })
+    ]);
+
+    return { makerPayload, backPayload, historyPayload };
+  } catch (error) {
+    console.warn("CSV publico indisponivel, tentando Apps Script.", error);
+    return loadNdSourcesFromAppsScript();
+  }
+}
+
+async function loadNdSourcesFromAppsScript() {
+  if (!ndState.writeEndpoint || !ndState.writeSecret) {
+    throw new Error("CSV publico indisponivel e Apps Script/token nao configurados.");
+  }
+
+  const url = new URL(ndState.writeEndpoint);
+  url.searchParams.set("action", "nd_data");
+  url.searchParams.set("secret", ndState.writeSecret);
+
+  const response = await fetch(url.toString(), { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Apps Script HTTP ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.ok) {
+    throw new Error(payload.error || "Apps Script nao retornou dados.");
+  }
+
+  return {
+    makerPayload: { columns: payload.makerColumns || [], rows: payload.makerRows || [] },
+    backPayload: { columns: payload.backColumns || [], rows: payload.backRows || [] },
+    historyPayload: { columns: payload.ndColumns || [], rows: payload.ndRows || [] }
+  };
 }
 
 function buildNdRecords(items) {
