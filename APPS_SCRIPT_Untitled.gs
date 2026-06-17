@@ -203,6 +203,8 @@ function makerUpdateCell_(payload) {
   const maker = String(payload.maker || "").trim();
   const columnName = String(payload.column || "").trim();
   const value = payload.value == null ? "" : payload.value;
+  const payloadCnpj = String(payload.cnpj || "").trim();
+  const payloadMes = String(payload.mes || payload.month || "").trim();
   const sheetName = makerResolveEditableSheetName_(payload.sheetName);
   const anchorColumnName = String(payload.anchorColumn || MAKER_WRITE_CONFIG.ANCHOR_HEADER).trim();
   const isBackSheet = makerNormalizeHeader_(sheetName) === makerNormalizeHeader_(MAKER_WRITE_CONFIG.BACK_SHEET_NAME);
@@ -223,31 +225,77 @@ function makerUpdateCell_(payload) {
   const headers = values[headerRow];
   const idCol = makerFindColumn_(headers, anchorColumnName);
   const targetCol = makerFindColumn_(headers, columnName);
+  const cnpjCol = makerFindColumnByCandidates_(headers, ["CNPJ"]);
+  const mesCol = makerFindColumnByCandidates_(headers, ["MES"]);
 
   if (idCol < 0 || targetCol < 0) {
     return makerJson_({ ok: false, error: "column not found" });
   }
 
-  if (isBackSheet && payloadRowNumber > headerRow + 1 && payloadRowNumber <= sheet.getLastRow()) {
+  if (
+    isBackSheet
+    && payloadRowNumber > headerRow + 1
+    && payloadRowNumber <= sheet.getLastRow()
+    && makerBackRowMatches_(values[payloadRowNumber - 1], idCol, cnpjCol, mesCol, maker, payloadCnpj, payloadMes)
+  ) {
     sheet.getRange(payloadRowNumber, targetCol + 1).setValue(value);
     return makerJson_({ ok: true, sheetName, row: payloadRowNumber, column: targetCol + 1, anchorColumn: anchorColumnName });
   }
 
+  const matchingRows = [];
   for (let row = headerRow + 1; row < values.length; row += 1) {
     if (makerNormalizeHeader_(values[row][idCol]) === makerNormalizeHeader_(maker)) {
-      sheet.getRange(row + 1, targetCol + 1).setValue(value);
-      if (isBackSheet) {
-        return makerJson_({ ok: true, sheetName, row: row + 1, column: targetCol + 1, anchorColumn: anchorColumnName });
-      }
-
-      const statusCatman = makerSyncStatusCatman_(sheet, row + 1, headers, columnName);
-      const paymentMethod = makerSyncPaymentMethod_(sheet, row + 1, headers, columnName);
-      const statusFpa = makerSyncStatusFpa_(sheet, row + 1, headers);
-      return makerJson_({ ok: true, row: row + 1, column: targetCol + 1, statusCatman, paymentMethod, statusFpa });
+      matchingRows.push(row);
     }
   }
 
+  const targetRowIndex = makerPickTargetRow_(matchingRows, values, cnpjCol, mesCol, payloadCnpj, payloadMes);
+  if (targetRowIndex >= 0) {
+    const targetRowNumber = targetRowIndex + 1;
+    sheet.getRange(targetRowNumber, targetCol + 1).setValue(value);
+    if (isBackSheet) {
+      return makerJson_({ ok: true, sheetName, row: targetRowNumber, column: targetCol + 1, anchorColumn: anchorColumnName });
+    }
+
+    const statusCatman = makerSyncStatusCatman_(sheet, targetRowNumber, headers, columnName);
+    const paymentMethod = makerSyncPaymentMethod_(sheet, targetRowNumber, headers, columnName);
+    const statusFpa = makerSyncStatusFpa_(sheet, targetRowNumber, headers);
+    return makerJson_({ ok: true, row: targetRowNumber, column: targetCol + 1, statusCatman, paymentMethod, statusFpa });
+  }
+
   return makerJson_({ ok: false, error: "maker not found" });
+}
+
+function makerPickTargetRow_(matchingRows, values, cnpjCol, mesCol, payloadCnpj, payloadMes) {
+  if (!matchingRows.length) return -1;
+
+  const hasCnpj = payloadCnpj && cnpjCol >= 0;
+  const hasMes = payloadMes && mesCol >= 0;
+  if (!hasCnpj && !hasMes) return matchingRows[0];
+
+  const normalizedCnpj = makerNormalizeDigits_(payloadCnpj);
+  const normalizedMes = makerNormalizeMonth_(payloadMes);
+
+  const exact = matchingRows.find((row) => {
+    const cnpjMatches = !hasCnpj || makerNormalizeDigits_(values[row][cnpjCol]) === normalizedCnpj;
+    const mesMatches = !hasMes || makerNormalizeMonth_(values[row][mesCol]) === normalizedMes;
+    return cnpjMatches && mesMatches;
+  });
+  if (exact >= 0) return exact;
+
+  if (hasMes) {
+    const monthMatch = matchingRows.find((row) => makerNormalizeMonth_(values[row][mesCol]) === normalizedMes);
+    if (monthMatch >= 0) return monthMatch;
+  }
+
+  return matchingRows[0];
+}
+
+function makerBackRowMatches_(row, idCol, cnpjCol, mesCol, maker, payloadCnpj, payloadMes) {
+  if (!row || makerNormalizeHeader_(row[idCol]) !== makerNormalizeHeader_(maker)) return false;
+  if (payloadCnpj && cnpjCol >= 0 && makerNormalizeDigits_(row[cnpjCol]) !== makerNormalizeDigits_(payloadCnpj)) return false;
+  if (payloadMes && mesCol >= 0 && makerNormalizeMonth_(row[mesCol]) !== makerNormalizeMonth_(payloadMes)) return false;
+  return true;
 }
 
 function makerSyncStatusCatman_(sheet, rowNumber, headers, changedColumnName) {
@@ -621,6 +669,17 @@ function makerNormalizeHeader_(value) {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+function makerNormalizeDigits_(value) {
+  return String(value || "").replace(/[^\d]/g, "");
+}
+
+function makerNormalizeMonth_(value) {
+  const digits = makerNormalizeDigits_(value);
+  const month = Number(digits);
+  if (month >= 1 && month <= 12) return String(month);
+  return makerNormalizeHeader_(value);
 }
 
 function makerJson_(data) {

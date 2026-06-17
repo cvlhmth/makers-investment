@@ -1342,6 +1342,8 @@ async function sendSheetUpdate(row, column, value) {
 
   const makerKey = findBackAnchorKey();
   const idKey = findColumnKey(["id_alianca", "id alianca"]);
+  const cnpjKey = findColumnKey(["cnpj"]);
+  const monthKey = findColumnKey(["mes", "mês", "month"]);
   const maker = String(row[makerKey] || "").trim();
   const idAlianca = String(row[idKey] || "").trim();
 
@@ -1357,6 +1359,8 @@ async function sendSheetUpdate(row, column, value) {
     rowNumber: row.__rowNumber,
     maker,
     idAlianca,
+    cnpj: String(row[cnpjKey] || "").trim(),
+    mes: String(row[monthKey] || "").trim(),
     column: column.label,
     value
   };

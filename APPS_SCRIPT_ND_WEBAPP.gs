@@ -9,7 +9,7 @@ const ND_WEB_WRITE_SECRET = "";
 const ND_WEB_MAKER_SPREADSHEET_ID = "16rLhvOn4V45_ypGWoaUXmxCRaPXBJej9EVrtByze-44";
 const ND_WEB_ND_SHEET_GID = 1349527717;
 const ND_WEB_ND_SHEET_FALLBACK_NAME = "ND";
-const ND_WEB_FIRST_ND_NUMBER = 358;
+const ND_WEB_FIRST_ND_NUMBER = 510;
 const ND_WEB_SCRIPT_VERSION = "2026-04-30-specific-nd-key-v5";
 const ND_WEB_ROOT_FOLDER_ID = "16xcdOEGPgRFU2Tevzlkr1c-mAXZZ8X1C";
 const ND_WEB_TEMPLATE_DOC_ID = "1wH0cqY46CwKVc3AcmWJCGtXcXypcgt9tACqcf2Nh3WQ";
@@ -47,29 +47,28 @@ const ND_WEB_MESES_NOMEADOS = [
 ];
 
 const ND_WEB_HEADERS = [
-  "STATUS",
   "N_ND",
-  "MAKER",
-  "VALOR",
+  "Nome",
+  "VALOR EMISSAO ND",
   "VALOR POR EXTENSO",
   "REFER\u00caNCIA",
   "CNPJ",
   "CNPJ_2",
   "RAZ\u00c3O SOCIAL",
+  "ORIGEM",
+  "STATUS",
+  "LINK",
+  "CHAVE_ORIGEM",
+  "CRIADO_EM",
+  "PDF_STATUS",
+  "PDF_ERRO",
+  "SCRIPT_VERSION",
   "ENDERE\u00c7O",
   "DATA DE VENCIMENTO",
   "SAP",
   "ANO",
   "MES",
-  "VALOR EMISSAO ND",
-  "VALOR FINAL EXTENSO",
-  "STATUS CATMAN",
-  "CHAVE_ORIGEM",
-  "CRIADO_EM",
-  "LINK",
-  "PDF_STATUS",
-  "PDF_ERRO",
-  "SCRIPT_VERSION"
+  "STATUS CATMAN"
 ];
 
 function ndWebDoGet() {
@@ -199,29 +198,28 @@ function ndWebCreateNds_(rows) {
     }
 
     rowsToAppend.push(ndWebRowObjectToSheetRow_({
-      STATUS: rowStatus,
       N_ND: nNd,
-      MAKER: rowInput.maker || "",
-      VALOR: valorNumber,
+      Nome: rowInput.maker || "",
+      "VALOR EMISSAO ND": valorNumber,
       "VALOR POR EXTENSO": rowInput.valorFinalExtenso || "",
       "REFER\u00caNCIA": legacyRow[5],
       CNPJ: legacyRow[6],
       CNPJ_2: legacyRow[7],
-      "RAZ\u00c3O SOCIAL": legacyRow[8],
+      "RAZ\u00c3O SOCIAL": ndWebBuildRazaoSocialFormula_(rowInput.sourceType, rowsToAppend.length + sheet.getLastRow() + 1),
+      ORIGEM: rowInput.sourceType || "maker",
+      STATUS: rowStatus,
+      LINK: link,
+      CHAVE_ORIGEM: allKeys[0] || "",
+      CRIADO_EM: now,
+      PDF_STATUS: pdfStatus,
+      PDF_ERRO: pdfError,
+      SCRIPT_VERSION: ND_WEB_SCRIPT_VERSION,
       "ENDERE\u00c7O": legacyRow[9],
       "DATA DE VENCIMENTO": legacyRow[10],
       SAP: legacyRow[11],
       ANO: rowInput.ano || "",
       MES: rowInput.mes || "",
-      "VALOR EMISSAO ND": valorNumber,
-      "VALOR FINAL EXTENSO": rowInput.valorFinalExtenso || "",
-      "STATUS CATMAN": rowInput.statusCatman || "Validado",
-      CHAVE_ORIGEM: allKeys[0] || "",
-      CRIADO_EM: now,
-      LINK: link,
-      PDF_STATUS: pdfStatus,
-      PDF_ERRO: pdfError,
-      SCRIPT_VERSION: ND_WEB_SCRIPT_VERSION
+      "STATUS CATMAN": rowInput.statusCatman || "Validado"
     }, headerMap));
 
     allKeys.forEach((key) => existingKeys.add(key));
@@ -244,7 +242,7 @@ function ndWebCreateNds_(rows) {
 
 function ndWebBuildLegacyPdfRow_(input, nNd, info) {
   const year = input.ano || new Date().getFullYear();
-  const reference = ndWebBuildReference_(input.mes, year);
+  const reference = ndWebBuildReference_(input.mes, year, input.sourceType);
   const cnpj = input.cnpj || info.cnpj || "";
   const cnpj2 = ndWebCleanCnpj_(cnpj);
   const valorNumber = ndWebParseNumber_(input.valorValidado);
@@ -403,11 +401,18 @@ function ndWebGetTargetFolderForReference_(root, reference) {
   return folders.hasNext() ? folders.next() : root.createFolder(folderName);
 }
 
-function ndWebBuildReference_(month, year) {
+function ndWebBuildReference_(month, year, sourceType) {
   const monthNumber = Number(String(month || "").replace(/[^\d]/g, ""));
   const monthName = monthNumber >= 1 && monthNumber <= 12 ? ND_WEB_MESES_EXTENSO[monthNumber - 1] : "";
   const monthText = monthName ? monthName.charAt(0).toUpperCase() + monthName.slice(1) : month || "";
-  return ["Makers Investment", monthText, year].filter(Boolean).join(" ");
+  return [ndWebNormalizeHeader_(sourceType) === "back" ? "Back Margin" : "Makers Investment", monthText, year].filter(Boolean).join(" ");
+}
+
+function ndWebBuildRazaoSocialFormula_(sourceType, rowNumber) {
+  if (ndWebNormalizeHeader_(sourceType) === "back") {
+    return '=if(B' + rowNumber + '="","", XLOOKUP(upper(B' + rowNumber + '),\'Contratos BM\'!B:B,\'Contratos BM\'!A:A))';
+  }
+  return '=if(B' + rowNumber + '="","", XLOOKUP(B' + rowNumber + ',Catman!D:D,Catman!H:H))';
 }
 
 function ndWebFormatDateOrToday_(value, fallbackDate) {
@@ -437,7 +442,8 @@ function ndWebCollectExistingKeys_(rows, headerMap) {
     if (ndWebIsSpecificRecordKey_(sourceKey)) keys.add(String(sourceKey));
 
     ndWebMakeRecordKeys_({
-      maker: ndWebValueByHeader_(row, headerMap, "MAKER"),
+      sourceType: ndWebValueByHeader_(row, headerMap, "ORIGEM"),
+      maker: ndWebValueByHeader_(row, headerMap, "Nome") || ndWebValueByHeader_(row, headerMap, "MAKER"),
       ano: ndWebValueByHeader_(row, headerMap, "ANO"),
       mes: ndWebValueByHeader_(row, headerMap, "MES"),
       valorValidado: ndWebValueByHeader_(row, headerMap, "VALOR EMISSAO ND")
@@ -451,7 +457,7 @@ function ndWebCollectExistingKeys_(rows, headerMap) {
 
 function ndWebIsSpecificRecordKey_(key) {
   const value = String(key || "");
-  return value.indexOf("id-year-month-value:") === 0 || value.indexOf("maker-year-month-value:") === 0;
+  return value.indexOf("id-year-month-value:") === 0 || value.indexOf("maker-year-month-value:") === 0 || value.indexOf("source-maker-year-month-value:") === 0;
 }
 
 function ndWebUnique_(values) {
@@ -466,6 +472,7 @@ function ndWebMakeRecordKeys_(input) {
   const value = ndWebParseNumber_(input.valorValidado).toFixed(2);
 
   if (maker && year && month && value !== "0.00") {
+    keys.push("source-maker-year-month-value:" + ndWebNormalizeHeader_(input.sourceType || "maker") + "|" + maker + "|" + year + "|" + month + "|" + value);
     keys.push("maker-year-month-value:" + maker + "|" + year + "|" + month + "|" + value);
   }
 

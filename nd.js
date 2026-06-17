@@ -1,10 +1,11 @@
 const ND_CONFIG = {
   makerSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=0&single=true&output=csv",
+  backSource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=567184749&single=true&output=csv",
   ndHistorySource: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTS6O5KqvPstUqKBvqorDRMryNJKa6rbPLCy5CRVMz8kSlS7gyxZubKqLxrUqW4sYenWTYZFUUv-1L-/pub?gid=1349527717&single=true&output=csv",
   writeEndpoint: "https://script.google.com/macros/s/AKfycbxCDV1PwvgyaH4HnG6d3GkXNgWodZbLKEh8V8DatdGeChirm4L9AguH5ze4XqbtlrWBWg/exec",
   legacyWriteEndpoint: "https://script.google.com/macros/s/AKfycbw-tLruP64EXOMQ0_OgAXy1mn4MRwNIOy3CZTdUvVwmrJQodW5kX0C-9XkMFKC2nG5KRw/exec",
   writeSecret: "1234",
-  firstNd: 358
+  firstNd: 510
 };
 
 const ND_STORAGE_KEYS = {
@@ -122,27 +123,31 @@ function bindNdEvents() {
 }
 
 async function loadNdData() {
-  setNdConnectionStatus("Carregando base Maker e historico de NDs...");
+  setNdConnectionStatus("Carregando bases Maker, Back e historico de NDs...");
   setNdHistoryStatus("Carregando historico...", "saving");
 
   try {
-    const [makerPayload, historyPayload] = await Promise.all([
+    const [makerPayload, backPayload, historyPayload] = await Promise.all([
       loadCsvObjects(ND_CONFIG.makerSource),
+      loadCsvObjects(ND_CONFIG.backSource),
       loadCsvObjects(ND_CONFIG.ndHistorySource).catch((error) => {
         console.warn("Nao foi possivel carregar o historico de NDs.", error);
         return { columns: [], rows: [] };
       })
     ]);
 
-    ndState.sourceRows = makerPayload.rows;
+    ndState.sourceRows = makerPayload.rows.concat(backPayload.rows);
     ndState.historyRows = historyPayload.rows;
     ndState.historyKeys = buildHistoryKeys(historyPayload.rows);
     ndState.nextNd = Math.max(ND_CONFIG.firstNd, getMaxNdNumber(historyPayload.rows) + 1);
-    ndState.records = buildNdRecords(makerPayload.rows);
+    ndState.records = buildNdRecords([
+      ...makerPayload.rows.map((row) => ({ row, sourceType: "maker" })),
+      ...backPayload.rows.map((row) => ({ row, sourceType: "back" }))
+    ]);
 
     syncNdFilters();
     applyNdFiltersAndRender();
-    setNdConnectionStatus(`Conectado ao Google Sheets, ${makerPayload.rows.length} registros Maker`);
+    setNdConnectionStatus(`Conectado ao Google Sheets, ${makerPayload.rows.length} Maker e ${backPayload.rows.length} Back`);
     setNdHistoryStatus(`${historyPayload.rows.length} registros no historico`, "ok");
   } catch (error) {
     console.error(error);
@@ -153,14 +158,17 @@ async function loadNdData() {
   }
 }
 
-function buildNdRecords(rows) {
-  const records = rows.map((row, index) => {
-    const maker = getRowValue(row, ["maker"]);
+function buildNdRecords(items) {
+  const records = items.map((item, index) => {
+    const row = item.row || item;
+    const sourceType = item.sourceType || "maker";
+    const maker = sourceType === "back" ? getRowValue(row, ["nome"]) : getRowValue(row, ["maker"]);
     const idAlianca = getRowValue(row, ["id_alianca", "id alianca", "id alianza"]);
     const year = getRowValue(row, ["ano", "year"]);
     const month = getRowValue(row, ["mes", "mês", "month"]);
     const cnpj = getRowValue(row, ["cnpj"]);
     const statusCatman = getRowValue(row, ["status catman"]);
+    const statusNd = getRowValue(row, ["status_nd", "status nd"]);
     const valorValidado = getFirstFilledValue(row, [
       "valor emissao nd",
       "valor emissão nd",
@@ -179,12 +187,13 @@ function buildNdRecords(rows) {
       "valor extenso"
     ]);
     const valueNumber = parseFlexibleNumber(valorValidado);
-    const sourceKeys = makeRecordKeys({ maker, year, month, valorValidado });
+    const sourceKeys = makeRecordKeys({ sourceType, maker, year, month, valorValidado });
     const alreadyCreated = sourceKeys.some((key) => ndState.historyKeys.has(key));
-    const eligible = isApprovedCatman(statusCatman);
+    const eligible = isApprovedCatman(statusCatman) && isPendingNd(statusNd);
     const missing = [];
 
-    if (!eligible) missing.push("Status Catman pendente");
+    if (!isApprovedCatman(statusCatman)) missing.push("Status Catman pendente");
+    if (isApprovedCatman(statusCatman) && !isPendingNd(statusNd)) missing.push("STATUS_ND nao pendente");
     if (!maker) missing.push("Maker vazio");
     if (!year) missing.push("Ano vazio");
     if (!valueNumber) missing.push("Valor emissao ND vazio");
@@ -201,10 +210,12 @@ function buildNdRecords(rows) {
       index,
       idAlianca,
       maker,
+      sourceType,
       year,
       month,
       cnpj,
       statusCatman,
+      statusNd,
       valorValidado,
       valorFinalExtenso,
       valueNumber,
@@ -365,6 +376,7 @@ async function createNds() {
   const rows = readyRecords.map((record) => ({
     nNd: record.nNd,
     maker: record.maker,
+    sourceType: record.sourceType,
     ano: record.year,
     mes: record.month,
     cnpj: record.cnpj,
@@ -528,6 +540,7 @@ function buildHistoryKeys(rows) {
 
   rows.forEach((row) => {
     makeRecordKeys({
+      sourceType: getFirstFilledValue(row, ["origem", "source type", "source_type"]),
       maker: getRowValue(row, ["maker"]),
       year: getFirstFilledValue(row, ["ano", "year"]),
       month: getFirstFilledValue(row, ["mes", "mês", "month"]),
@@ -543,7 +556,7 @@ function buildHistoryKeys(rows) {
   return keys;
 }
 
-function makeRecordKeys({ maker, year, month, valorValidado }) {
+function makeRecordKeys({ sourceType, maker, year, month, valorValidado }) {
   const keys = [];
   const normalizedMaker = normalizeHeader(maker);
   const normalizedYear = String(year || "").trim();
@@ -551,6 +564,7 @@ function makeRecordKeys({ maker, year, month, valorValidado }) {
   const normalizedValue = parseFlexibleNumber(valorValidado).toFixed(2);
 
   if (normalizedMaker && normalizedYear && normalizedMonth && normalizedValue !== "0.00") {
+    keys.push(`source-maker-year-month-value:${normalizeHeader(sourceType || "maker")}|${normalizedMaker}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);
     keys.push(`maker-year-month-value:${normalizedMaker}|${normalizedYear}|${normalizedMonth}|${normalizedValue}`);
   }
 
@@ -559,7 +573,7 @@ function makeRecordKeys({ maker, year, month, valorValidado }) {
 
 function isSpecificRecordKey(key) {
   const value = String(key || "");
-  return value.startsWith("id-year-month-value:") || value.startsWith("maker-year-month-value:");
+  return value.startsWith("id-year-month-value:") || value.startsWith("maker-year-month-value:") || value.startsWith("source-maker-year-month-value:");
 }
 
 function getMaxNdNumber(rows) {
@@ -600,6 +614,10 @@ function findRowKey(row, candidates) {
 function isApprovedCatman(value) {
   const normalized = normalizeHeader(value);
   return ["approved", "aprovado", "valido", "validado"].includes(normalized);
+}
+
+function isPendingNd(value) {
+  return ["pending", "pendente", "em aberto", "aguardando"].includes(normalizeHeader(value));
 }
 
 function displayCatmanStatus(value) {
